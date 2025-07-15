@@ -1,7 +1,10 @@
-# Usar la imagen base oficial de PostgreSQL 17
+# Use the official PostgreSQL 17 base image
 FROM postgres:17
 
-# Instalar las extensiones necesarias y herramientas de compilación
+# Define the pgvector version to install
+ARG PG_VECTOR_RELEASE="v0.8.0"
+
+# Install necessary extensions and build tools
 RUN apt-get update && apt-get install -y \
     postgresql-contrib \
     postgresql-17-postgis-3 \
@@ -11,8 +14,8 @@ RUN apt-get update && apt-get install -y \
     postgresql-server-dev-17 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalar pgvector desde el código fuente
-RUN git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+# Install pgvector from source code
+RUN git clone --branch ${PG_VECTOR_RELEASE} https://github.com/pgvector/pgvector.git /tmp/pgvector \
     && cd /tmp/pgvector \
     && make clean \
     && make OPTFLAGS="" \
@@ -20,7 +23,7 @@ RUN git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git /tmp/pgve
     && cd / \
     && rm -rf /tmp/pgvector
 
-# Limpiar paquetes de compilación para reducir el tamaño de la imagen
+# Clean up build packages to reduce image size
 RUN apt-get update && apt-get remove -y \
     git \
     build-essential \
@@ -28,8 +31,8 @@ RUN apt-get update && apt-get remove -y \
     && apt-get autoremove -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copiar el script de inicialización opcional
+# Copy the optional initialization script
 COPY init.sql /docker-entrypoint-initdb.d/
 
-# Exponer el puerto por defecto de PostgreSQL
+# Expose the default PostgreSQL port
 EXPOSE 5432
