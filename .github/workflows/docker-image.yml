@@ -27,7 +27,7 @@ jobs:
         password: ${{ secrets.DOCKER_PERSONAL_KEY }}
 
     - name: Set combined version
-      run: echo "COMBINED_VERSION=${{ env.POSTGRES_VERSION }}-${{ env.IMAGE_VERSION }}" >> $GITHUB_ENV
+      run: echo "COMBINED_VERSION=${{ env.POSTGRES_VERSION }}-v${{ env.IMAGE_VERSION }}" >> $GITHUB_ENV
 
     - name: Extract metadata
       id: meta
