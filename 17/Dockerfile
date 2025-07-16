@@ -1,5 +1,5 @@
 # Use the official PostgreSQL 17 base image
-FROM postgres:17
+FROM postgres:17.5
 
 # Define the pgvector version to install
 ARG PG_VECTOR_RELEASE="v0.8.0"

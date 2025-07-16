@@ -1,3 +1,5 @@
 -- Initialize the necessary extensions
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS vector;
+
+-- By default they will be disabled
+-- CREATE EXTENSION IF NOT EXISTS postgis;
+-- CREATE EXTENSION IF NOT EXISTS vector;
