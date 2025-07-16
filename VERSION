@@ -1,0 +1,14 @@
+# Version configuration for Docker images
+# Modify this file to change the versions that are built
+
+# Main PostgreSQL version
+POSTGRES_VERSION=17
+
+# Docker image version (includes PostgreSQL version + extensions version)
+IMAGE_VERSION=17.5-v1.0.0
+
+# pgvector version (must match the ARG in the Dockerfile)
+PG_VECTOR_VERSION=v0.8.0
+
+# Version notes
+# v1.0.0: PostgreSQL 17.5 + PostGIS 3 + pgvector 0.8.0

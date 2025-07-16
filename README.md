@@ -2,6 +2,29 @@
 
 A collection of Docker-based PostgreSQL setups with PostGIS and pgvector extensions for geospatial and vector similarity search capabilities, organized by PostgreSQL version.
 
+## 🏗️ Version Management
+
+This repository allows specifying static versions for Docker images:
+
+### Version Control Methods
+
+1. **Static Version (Automatic)**: Modify `IMAGE_VERSION` in `.github/workflows/docker-image.yml`
+2. **Manual Version**: Use the `docker-image-manual.yml` workflow to specify versions when running
+3. **Configuration File**: See the `VERSION` file for current versions
+
+### Changing the Image Version
+
+To publish a new version:
+
+1. **Static Method**: Edit `.github/workflows/docker-image.yml`:
+   ```yaml
+   env:
+     IMAGE_VERSION: "17.5-v2.0.0"  # Change this line
+     POSTGRES_VERSION: "17"
+   ```
+
+2. **Manual Method**: Go to GitHub Actions → "Docker Image CI (Manual Version)" → "Run workflow"
+
 ## Repository Structure
 
 This repository is organized by PostgreSQL major versions:
@@ -11,13 +34,11 @@ This repository is organized by PostgreSQL major versions:
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── init.sql
-├── 15/                    # PostgreSQL 15 files (future - example)
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── init.sql
+├── VERSION                # Configuración de versiones
 └── .github/
     └── workflows/
-        └── docker-image.yml   # Builds all versions
+        ├── docker-image.yml        # Build automático con versión estática
+        └── docker-image-manual.yml # Build manual con input de versión
 ```
 
 ## Available Versions
@@ -26,10 +47,17 @@ This repository is organized by PostgreSQL major versions:
 
 ## Docker Hub Tags
 
-Images are available with the following tags:
+The images are available with the following tags:
 
-- `ruxwez/postgres:latest` - Latest build from main branch
-- `ruxwez/postgres:YYYYMMDD-HHmmss` - Timestamped builds
+- `ruxwez/postgres:latest` - Latest build from the main branch
+- `ruxwez/postgres:17.5-v1.0.0` - Specific version (example)
+- `ruxwez/postgres:[VERSION]` - Version specified in the workflow
+
+### Current Version
+- **Image**: `17.5-v1.0.0`
+- **PostgreSQL**: `17.5`
+- **pgvector**: `v0.8.0`
+- **PostGIS**: `3.x`
 
 ## Features
 
