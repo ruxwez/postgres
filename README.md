@@ -9,6 +9,7 @@ A Docker-based PostgreSQL 17 setup with PostGIS and pgvector extensions for geos
 - **pgvector**: Open-source vector similarity search for PostgreSQL
 - **Docker Compose**: Easy deployment and management
 - **Pre-configured**: Ready-to-use with extensions automatically enabled
+- **Multi-architecture**: Supports AMD64 and ARM64 platforms
 
 ## Extensions Included
 
@@ -33,6 +34,17 @@ cd postgres
 2. Start the PostgreSQL container:
 ```bash
 docker-compose up -d
+```
+
+**Or use the pre-built image directly:**
+```bash
+docker run -d \
+  --name postgres17 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=1234 \
+  -e POSTGRES_DB=postgres \
+  -p 5432:5432 \
+  ruxwez/postgres:latest
 ```
 
 3. Connect to the database:
@@ -174,6 +186,11 @@ If you want to customize the Docker image:
 
 ```bash
 docker build -t custom-postgres .
+```
+
+**With Docker Compose:**
+```bash
+docker-compose build
 ```
 
 ## Troubleshooting
