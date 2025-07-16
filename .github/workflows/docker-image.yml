@@ -41,8 +41,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ${{ env.POSTGRES_VERSION }}
-        file: ${{ env.POSTGRES_VERSION }}/Dockerfile
+        context: .
+        file: ./Dockerfile
         platforms: linux/amd64,linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}

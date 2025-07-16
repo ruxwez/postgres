@@ -1,6 +1,6 @@
 # PostgreSQL with PostGIS and pgvector
 
-A collection of Docker-based PostgreSQL setups with PostGIS and pgvector extensions for geospatial and vector similarity search capabilities, organized by PostgreSQL version.
+A Docker-based PostgreSQL setup with PostGIS and pgvector extensions for geospatial and vector similarity search capabilities.
 
 ## 🏗️ Version Management
 
@@ -19,42 +19,35 @@ To publish a new version:
 1. **Static Method**: Edit `.github/workflows/docker-image.yml`:
    ```yaml
    env:
-     IMAGE_VERSION: "17.5-v2.0.0"  # Change this line
-     POSTGRES_VERSION: "17"
+     IMAGE_VERSION: "0.1.0"  # Change this line
+     POSTGRES_VERSION: "17.5"
    ```
 
 2. **Manual Method**: Go to GitHub Actions → "Docker Image CI (Manual Version)" → "Run workflow"
 
 ## Repository Structure
 
-This repository is organized by PostgreSQL major versions:
-
 ```
-├── 17/                    # PostgreSQL 17 files
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── init.sql
-├── VERSION                # Configuración de versiones
+├── Dockerfile             # PostgreSQL 17 with PostGIS and pgvector
+├── docker-compose.yml     # Docker Compose configuration
+├── init.sql              # Database initialization script
+├── VERSION               # Version configuration
 └── .github/
     └── workflows/
-        ├── docker-image.yml        # Build automático con versión estática
-        └── docker-image-manual.yml # Build manual con input de versión
+        ├── docker-image.yml        # Automatic build with static version
+        └── docker-image-manual.yml # Manual build with version input
 ```
-
-## Available Versions
-
-- **PostgreSQL 17**: Latest version with PostGIS and pgvector
 
 ## Docker Hub Tags
 
 The images are available with the following tags:
 
 - `ruxwez/postgres:latest` - Latest build from the main branch
-- `ruxwez/postgres:17.5-v1.0.0` - Specific version (example)
+- `ruxwez/postgres:17.5-0.1.0` - Specific version (example)
 - `ruxwez/postgres:[VERSION]` - Version specified in the workflow
 
 ### Current Version
-- **Image**: `17.5-v1.0.0`
+- **Image**: `17.5-0.1.0`
 - **PostgreSQL**: `17.5`
 - **pgvector**: `v0.8.0`
 - **PostGIS**: `3.x`
@@ -82,12 +75,10 @@ The images are available with the following tags:
 
 ### Installation
 
-#### PostgreSQL 17
-
 1. Clone this repository:
 ```bash
 git clone https://github.com/ruxwez/postgres.git
-cd postgres/17
+cd postgres
 ```
 
 2. Start the PostgreSQL container:
