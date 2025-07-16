@@ -28,16 +28,14 @@ jobs:
       with:
         images: ruxwez/postgres
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value={{date 'YYYYMMDD-HHmmss'}},enable={{is_default_branch}}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: Dockerfile
+        context: 17
+        file: 17/Dockerfile
         platforms: linux/amd64,linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}

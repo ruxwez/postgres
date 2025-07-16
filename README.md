@@ -1,10 +1,39 @@
-# PostgreSQL 17 with PostGIS and pgvector
+# PostgreSQL with PostGIS and pgvector
 
-A Docker-based PostgreSQL 17 setup with PostGIS and pgvector extensions for geospatial and vector similarity search capabilities.
+A collection of Docker-based PostgreSQL setups with PostGIS and pgvector extensions for geospatial and vector similarity search capabilities, organized by PostgreSQL version.
+
+## Repository Structure
+
+This repository is organized by PostgreSQL major versions:
+
+```
+├── 17/                    # PostgreSQL 17 files
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── init.sql
+├── 15/                    # PostgreSQL 15 files (future - example)
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── init.sql
+└── .github/
+    └── workflows/
+        └── docker-image.yml   # Builds all versions
+```
+
+## Available Versions
+
+- **PostgreSQL 17**: Latest version with PostGIS and pgvector
+
+## Docker Hub Tags
+
+Images are available with the following tags:
+
+- `ruxwez/postgres:latest` - Latest build from main branch
+- `ruxwez/postgres:YYYYMMDD-HHmmss` - Timestamped builds
 
 ## Features
 
-- **PostgreSQL 17**: Latest PostgreSQL version
+- **PostgreSQL**: Latest PostgreSQL versions
 - **PostGIS**: Spatial database extender for PostgreSQL
 - **pgvector**: Open-source vector similarity search for PostgreSQL
 - **Docker Compose**: Easy deployment and management
@@ -25,10 +54,12 @@ A Docker-based PostgreSQL 17 setup with PostGIS and pgvector extensions for geos
 
 ### Installation
 
+#### PostgreSQL 17
+
 1. Clone this repository:
 ```bash
 git clone https://github.com/ruxwez/postgres.git
-cd postgres
+cd postgres/17
 ```
 
 2. Start the PostgreSQL container:
