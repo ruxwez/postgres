@@ -23,6 +23,16 @@ RUN git clone --branch ${PG_VECTOR_RELEASE} https://github.com/pgvector/pgvector
     && cd / \
     && rm -rf /tmp/pgvector
 
+# Install pgmq from source
+RUN git clone https://github.com/pgmq/pgmq.git /tmp/pgmq \
+    && cd /tmp/pgmq/pgmq-extension \
+    && make \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/pgmq
+
+
+
 # Clean up build packages to reduce image size
 RUN apt-get update && apt-get remove -y \
     git \
