@@ -2,13 +2,12 @@ use std::sync::{Arc, LazyLock};
 
 use crate::{common::run, structs::ExtensionVersionCompatibility};
 
-static VERSIONS: LazyLock<Arc<ExtensionVersionCompatibility>> = LazyLock::new(|| {
-    Arc::new(ExtensionVersionCompatibility {
+static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
+    LazyLock::new(|| ExtensionVersionCompatibility {
         v16: "3",
         v17: "3",
         v18: "3",
-    })
-});
+    });
 
 pub fn install(pg_version: Arc<String>) {
     let pg_major = pg_version.to_owned().split('.').next().unwrap().to_owned();
