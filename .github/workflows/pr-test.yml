@@ -1,0 +1,52 @@
+name: PR - Build (amd64, arm64)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (no push) — PostgreSQL ${{ matrix.postgres_version }} / ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres_version: ["18", "17", "17.6", "16", "16.10"]
+        platform: ["linux/amd64", "linux/arm64"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (for multi-arch builds)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Build image for ${{ matrix.platform }} (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: false
+          # Do not load into local Docker daemon to avoid platform mismatches on runner;
+          # we only want to verify that the multi-arch build completes successfully.
+          load: false
+          tags: |
+            pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.number }}
+          build-args: |
+            POSTGRES_VERSION=${{ matrix.postgres_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output build metadata
+        run: |
+          echo "Built (multi-arch) for POSTGRES_VERSION=${{ matrix.postgres_version }} PLATFORM=${{ matrix.platform }}"
+          echo "Tag used: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.number }}"
