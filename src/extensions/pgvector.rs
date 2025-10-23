@@ -1,16 +1,30 @@
-use crate::common::run;
-use std::fs;
+use crate::{common::run, structs::ExtensionVersionCompatibility};
+use std::{
+    fs,
+    sync::{Arc, LazyLock},
+};
 use tokio::task::JoinHandle;
 
-static EXTENSION_VERSION: &str = "0.8.1";
+static VERSIONS: LazyLock<Arc<ExtensionVersionCompatibility>> = LazyLock::new(|| {
+    Arc::new(ExtensionVersionCompatibility {
+        v16: "0.8.1",
+        v17: "0.8.1",
+        v18: "0.8.1",
+    })
+});
 
-pub fn install() -> JoinHandle<()> {
+pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
+    let version = match VERSIONS.get_version(&pg_version.to_owned()) {
+        Some(v) => v,
+        None => panic!("Unsupported PostgreSQL version"),
+    };
+
     tokio::spawn(async move {
-        tokio::task::spawn_blocking(|| {
+        tokio::task::spawn_blocking(move || {
             // Clone the repository
             run(&format!(
                 "git clone --branch v{} --depth 1 https://github.com/pgvector/pgvector.git /tmp/pgvector",
-                EXTENSION_VERSION
+                version
             ));
 
             // Build and install pgvector

@@ -1,9 +1,10 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use crate::common::{run, run_output};
 
 mod common;
 mod extensions;
+mod structs;
 
 #[tokio::main]
 async fn main() {
@@ -32,6 +33,8 @@ async fn main() {
         println!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
         pg_version = numeric_version;
     }
+
+    let pg_version = Arc::new(pg_version);
 
     let pg_major = pg_version.split(".").next().unwrap();
 
