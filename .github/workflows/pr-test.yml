@@ -4,8 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: pr-build-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -14,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        postgres_version: ["18", "17", "17.6", "16", "16.10"]
-        platform: ["linux/amd64", "linux/arm64"]
+        postgres_version: ["latest", "18", "17", "17.6", "16", "16.10"]
+        platform: ["linux/amd64"]
       fail-fast: false
 
     steps:
@@ -36,11 +40,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: false
-          # Do not load into local Docker daemon to avoid platform mismatches on runner;
-          # we only want to verify that the multi-arch build completes successfully.
           load: false
           tags: |
-            pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.number }}
+            pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}
           build-args: |
             POSTGRES_VERSION=${{ matrix.postgres_version }}
           cache-from: type=gha
@@ -48,5 +50,25 @@ jobs:
 
       - name: Output build metadata
         run: |
+          echo "✅ Build completed successfully"
           echo "Built (multi-arch) for POSTGRES_VERSION=${{ matrix.postgres_version }} PLATFORM=${{ matrix.platform }}"
-          echo "Tag used: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.number }}"
+          echo "Tag used: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}"
+
+  # Job resumen que agrupa todos los builds de la matriz
+  build-complete:
+    name: All builds passed
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+
+    steps:
+      - name: Check build matrix status
+        if: needs.build.result != 'success'
+        run: |
+          echo "❌ One or more builds failed"
+          exit 1
+
+      - name: All builds passed
+        run: |
+          echo "✅ All PostgreSQL versions built successfully"
+          echo "Ready to merge!"

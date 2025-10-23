@@ -1,4 +1,4 @@
-ARG POSTGRES_VERSION=17.5
+ARG POSTGRES_VERSION=latest
 
 # Builder stage: compile the Rust binary
 FROM rust:slim AS builder
