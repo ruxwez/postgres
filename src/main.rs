@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::common::run;
+use crate::common::{run, run_output};
 
 mod common;
 mod extensions;
@@ -14,7 +14,25 @@ async fn main() {
         panic!("Insert PostgreSQL version as argument");
     }
 
-    let pg_version = &args[1];
+    // If user passed "latest", detect the numeric version from the installed postgres binary.
+    // Otherwise use the provided version string (e.g. "15.3" or "15").
+    let mut pg_version = args[1].clone();
+    if pg_version.eq_ignore_ascii_case("latest") {
+        println!("🔎 Detecting PostgreSQL version from the base image (requested: latest)...");
+        // Try `postgres --version`. This requires that the base image already provides the postgres binary.
+        let ver_output = run_output("postgres --version");
+        // Typical output: "postgres (PostgreSQL) 15.3"
+        // We take the last whitespace-separated token as the numeric version.
+        let numeric_version = ver_output
+            .split_whitespace()
+            .last()
+            .expect("Failed to parse postgres --version output")
+            .to_string();
+
+        println!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
+        pg_version = numeric_version;
+    }
+
     let pg_major = pg_version.split(".").next().unwrap();
 
     println!(
