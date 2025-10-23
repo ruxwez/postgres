@@ -3,7 +3,8 @@ name: PR - Build (amd64, arm64)
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-
+  push:
+    branches: [main]
 permissions:
   contents: read
   pull-requests: read
