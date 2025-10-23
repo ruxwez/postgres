@@ -1,23 +1,34 @@
-use crate::common::run;
-use std::fs;
+use crate::{common::run, structs::ExtensionVersionCompatibility};
+use std::{
+    fs,
+    sync::{Arc, LazyLock},
+};
 use tokio::task::JoinHandle;
 
-static EXTENSION_VERSION: &str = "0.8.1";
+static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
+    LazyLock::new(|| ExtensionVersionCompatibility {
+        v16: "0.8.1",
+        v17: "0.8.1",
+        v18: "0.8.1",
+    });
 
-pub fn install() -> JoinHandle<()> {
-    tokio::spawn(async move {
-        tokio::task::spawn_blocking(|| {
-            // Clone the repository
-            run(&format!(
-                "git clone --branch v{} --depth 1 https://github.com/pgvector/pgvector.git /tmp/pgvector",
-                EXTENSION_VERSION
-            ));
+pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
+    let version = match VERSIONS.get_version(&pg_version.to_owned()) {
+        Some(v) => v,
+        None => panic!("Unsupported PostgreSQL version"),
+    };
 
-            // Build and install pgvector
-            run("cd /tmp/pgvector && make clean && make OPTFLAGS='' && make install");
+    tokio::task::spawn_blocking(move || {
+        // Clone the repository
+        run(&format!(
+            "git clone --branch v{} --depth 1 https://github.com/pgvector/pgvector.git /tmp/pgvector",
+            version
+        ));
 
-            // Clean up the temporary directory
-            fs::remove_dir_all("/tmp/pgvector").ok();
-        }).await.expect("Blocking task failed");
+        // Build and install pgvector
+        run("cd /tmp/pgvector && make clean && make OPTFLAGS='' && make install");
+
+        // Clean up the temporary directory
+        fs::remove_dir_all("/tmp/pgvector").ok();
     })
 }

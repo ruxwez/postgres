@@ -1,21 +1,30 @@
-use crate::common::run;
-use std::fs;
+use crate::{common::run, structs::ExtensionVersionCompatibility};
+use std::{
+    fs,
+    sync::{Arc, LazyLock},
+};
 use tokio::task::JoinHandle;
 
-static EXTENSION_VERSION: &str = "1.7.0";
+static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
+    LazyLock::new(|| ExtensionVersionCompatibility {
+        v16: "1.7.0",
+        v17: "1.7.0",
+        v18: "1.7.0",
+    });
 
-pub fn install() -> JoinHandle<()> {
-    tokio::spawn(async move {
-        tokio::task::spawn_blocking(|| {
-            run(&format!(
-                "git clone --branch v{} --depth 1 https://github.com/pgmq/pgmq.git /tmp/pgmq",
-                EXTENSION_VERSION
-            ));
+pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
+    let version = match VERSIONS.get_version(&pg_version.to_owned()) {
+        Some(v) => v,
+        None => panic!("Unsupported PostgreSQL version"),
+    };
 
-            run("cd /tmp/pgmq/pgmq-extension && make && make install");
-            fs::remove_dir_all("/tmp/pgmq").ok();
-        })
-        .await
-        .expect("Blocking task failed");
+    tokio::task::spawn_blocking(move || {
+        run(&format!(
+            "git clone --branch v{} --depth 1 https://github.com/pgmq/pgmq.git /tmp/pgmq",
+            version
+        ));
+
+        run("cd /tmp/pgmq/pgmq-extension && make && make install");
+        fs::remove_dir_all("/tmp/pgmq").ok();
     })
 }
