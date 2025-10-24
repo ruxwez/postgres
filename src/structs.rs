@@ -1,7 +1,3 @@
-use clap::Parser;
-
-use crate::common::get_major_version;
-
 pub struct ExtensionVersionCompatibility<'a> {
     pub v16: &'a str,
     pub v17: &'a str,
@@ -11,9 +7,8 @@ pub struct ExtensionVersionCompatibility<'a> {
 impl ExtensionVersionCompatibility<'static> {
     pub fn get_version(&self, version: &str) -> Option<String> {
         if version.contains('.') {
-            let major_version = get_major_version(version);
-
-            return self.get_version(&major_version);
+            let major_version = version.split('.').next().unwrap();
+            return self.get_version(major_version);
         }
 
         match version.to_string().as_str() {
@@ -23,11 +18,4 @@ impl ExtensionVersionCompatibility<'static> {
             _ => None,
         }
     }
-}
-
-#[derive(Parser, Debug)]
-pub struct CLI {
-    // Test mode
-    #[arg(short, long, default_value_t = false)]
-    pub test_mode: bool,
 }

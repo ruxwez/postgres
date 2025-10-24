@@ -1,9 +1,9 @@
 # PostgreSQL Extensions Installer (derived Docker image)
-[![Docker Pulls](https://img.shields.io/docker/pulls/ruxwez/postgres?style=flat-square)](https://hub.docker.com/r/ruxwez/postgres)
-[![GitHub branch check runs](https://img.shields.io/github/check-runs/ruxwez/postgres/main?style=flat-square&label=build)](https://github.com/ruxwez/postgres/actions)
+![Docker Pulls](https://img.shields.io/docker/pulls/ruxwez/postgres?style=flat-square)
+![GitHub branch check runs](https://img.shields.io/github/check-runs/ruxwez/postgres/main?cacheSeconds=60)
 ![GitHub contributors](https://img.shields.io/github/contributors/ruxwez/postgres?style=flat-square)
-[![GitHub License](https://img.shields.io/github/license/ruxwez/postgres?style=flat-square)](https://github.com/ruxwez/postgres/blob/main/LICENSE)
-[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/ruxwez/postgres?style=flat-square)](https://github.com/ruxwez/postgres/issues)
+![GitHub License](https://img.shields.io/github/license/ruxwez/postgres?style=flat-square)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/ruxwez/postgres?style=flat-square)
 
 ## Purpose
 

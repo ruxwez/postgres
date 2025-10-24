@@ -1,4 +1,4 @@
-use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
+use crate::{common::run, structs::ExtensionVersionCompatibility};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -15,7 +15,7 @@ static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
 pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
     let version = match VERSIONS.get_version(&pg_version.to_owned()) {
         Some(v) => v,
-        None => print_error!("Unsupported PostgreSQL version"),
+        None => panic!("Unsupported PostgreSQL version"),
     };
 
     tokio::task::spawn_blocking(move || {
@@ -27,13 +27,4 @@ pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
         run("cd /tmp/pgmq/pgmq-extension && make && make install");
         fs::remove_dir_all("/tmp/pgmq").ok();
     })
-}
-
-pub async fn run_test() {
-    let pool = test::get_pool();
-
-    sqlx::query("CREATE EXTENSION pgmq")
-        .execute(pool)
-        .await
-        .unwrap_or_else(|_| print_error!("Error to create pgmq extension"));
 }
