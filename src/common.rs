@@ -18,7 +18,7 @@ macro_rules! print_message {
 #[macro_export]
 macro_rules! print_success {
     ($($arg:tt)*) => {{
-        println!("💠 | {}", format!($($arg)*));
+        println!("✅ | {}", format!($($arg)*));
     }};
 }
 
@@ -72,4 +72,14 @@ pub fn get_current_postgres_version() -> String {
     print_success!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
 
     numeric_version
+}
+
+pub fn get_major_version(version: &str) -> String {
+    version
+        .split('.')
+        .next()
+        .unwrap_or_else(|| {
+            print_error!("Error parsing PostgreSQL major version from {}", version);
+        })
+        .to_string()
 }

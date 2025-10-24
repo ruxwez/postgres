@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{common::run, extensions, print_error, print_message, print_success};
+use crate::{
+    common::{get_major_version, run},
+    extensions, print_error, print_message, print_success,
+};
 
 pub async fn installer(pg_version: String) {
     if !cfg!(unix) {
@@ -9,7 +12,7 @@ pub async fn installer(pg_version: String) {
 
     let pg_version = Arc::new(pg_version);
 
-    let pg_major = pg_version.split(".").next().unwrap();
+    let pg_major = get_major_version(&pg_version);
 
     print_message!(
         "🚀 Installing PostgreSQL extensions for version {}",

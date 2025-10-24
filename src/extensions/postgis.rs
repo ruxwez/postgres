@@ -1,6 +1,11 @@
 use std::sync::{Arc, LazyLock};
 
-use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
+use crate::{
+    common::{get_major_version, run},
+    print_error,
+    structs::ExtensionVersionCompatibility,
+    test,
+};
 
 static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
     LazyLock::new(|| ExtensionVersionCompatibility {
@@ -10,11 +15,11 @@ static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
     });
 
 pub fn install(pg_version: Arc<String>) {
-    let pg_major = pg_version.to_owned().split('.').next().unwrap().to_owned();
+    let pg_major = get_major_version(&pg_version);
 
     let ex_version = match VERSIONS.get_version(&pg_major.clone()) {
         Some(v) => v,
-        None => panic!("Unsupported PostgreSQL version"),
+        None => print_error!("Unsupported PostgreSQL version"),
     };
 
     run(&format!(

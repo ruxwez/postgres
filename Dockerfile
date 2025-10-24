@@ -12,14 +12,13 @@ RUN cargo build --release
 
 # Final stage: only Postgres
 FROM postgres:${POSTGRES_VERSION}
-ARG POSTGRES_VERSION
 ARG TEST_MODE
 
 # Copy the compiled binary
 COPY --from=builder /installer/target/release/install-extensions /usr/local/bin/installer
 
 # Run installer (all logic including cleanup is inside the binary)
-RUN /usr/local/bin/installer --pg-version ${POSTGRES_VERSION}
+RUN /usr/local/bin/installer
 
 # If TEST_MODE is true, run tests
 RUN if [ "${TEST_MODE}" = "false" ]; then rm /usr/local/bin/installer; fi

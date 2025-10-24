@@ -15,7 +15,7 @@ static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
 pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
     let version = match VERSIONS.get_version(&pg_version.to_owned()) {
         Some(v) => v,
-        None => panic!("Unsupported PostgreSQL version"),
+        None => print_error!("Unsupported PostgreSQL version"),
     };
 
     tokio::task::spawn_blocking(move || {

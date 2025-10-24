@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::print_error;
+use crate::{common::get_major_version, print_error};
 
 pub struct ExtensionVersionCompatibility<'a> {
     pub v16: &'a str,
@@ -11,11 +11,9 @@ pub struct ExtensionVersionCompatibility<'a> {
 impl ExtensionVersionCompatibility<'static> {
     pub fn get_version(&self, version: &str) -> Option<String> {
         if version.contains('.') {
-            let major_version = version.split('.').next().unwrap_or_else(|| {
-                print_error!("Error extracting major version from {}", version);
-            });
+            let major_version = get_major_version(version);
 
-            return self.get_version(major_version);
+            return self.get_version(&major_version);
         }
 
         match version.to_string().as_str() {
