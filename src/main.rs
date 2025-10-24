@@ -46,12 +46,18 @@ async fn main() {
     // Install necessary packages
     println!("📦 Installing build dependencies...");
     run(&format!(
-        "apt-get update && apt-get install -y --no-install-recommends \
-         postgresql-contrib \
-         git \
-         build-essential \
-         postgresql-server-dev-{} \
-         ca-certificates",
+        "set -e && \
+         apt-get update && \
+         apt-get upgrade -y && \
+         apt-get install -y --no-install-recommends \
+             postgresql-contrib \
+             git \
+             build-essential \
+             postgresql-server-dev-{} \
+             ca-certificates && \
+         apt-get autoremove -y && \
+         apt-get clean && \
+         rm -rf /var/lib/apt/lists/*",
         pg_major
     ));
 
