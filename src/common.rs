@@ -1,14 +1,38 @@
 use std::process::Command;
 
+#[macro_export]
+macro_rules! print_error {
+    ($($arg:tt)*) => {{
+        eprintln!("❌ | {}", format!($($arg)*));
+        std::process::exit(1);
+    }};
+}
+
+#[macro_export]
+macro_rules! print_message {
+    ($($arg:tt)*) => {{
+        println!("💠 | {}", format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! print_success {
+    ($($arg:tt)*) => {{
+        println!("💠 | {}", format!($($arg)*));
+    }};
+}
+
 pub fn run(cmd: &str) {
     let status = Command::new("sh")
         .arg("-c")
         .arg(cmd)
         .status()
-        .expect("Failed to execute command");
+        .unwrap_or_else(|_| {
+            print_error!("Failed to execute command: {}", cmd);
+        });
 
     if !status.success() {
-        panic!("Command failed: {}", cmd);
+        print_error!("Command failed: {}", cmd);
     }
 }
 
@@ -19,18 +43,20 @@ pub fn run_output(cmd: &str) -> String {
         .arg("-c")
         .arg(cmd)
         .output()
-        .expect("Failed to execute command");
+        .unwrap_or_else(|_| {
+            print_error!("Failed to execute command: {}", cmd);
+        });
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        panic!("Command failed: {}\nstderr: {}", cmd, stderr);
+        print_error!("Command failed: {}\nstderr: {}", cmd, stderr);
     }
 
     String::from_utf8_lossy(&output.stdout).trim().to_string()
 }
 
 pub fn get_current_postgres_version() -> String {
-    println!("🔎 Detecting PostgreSQL version from the base image (requested: latest)...");
+    print_message!("🔎 Detecting PostgreSQL version from the base image (requested: latest)...");
     // Try `postgres --version`. This requires that the base image already provides the postgres binary.
     let ver_output = run_output("postgres --version");
     // Typical output: "postgres (PostgreSQL) 15.3"
@@ -38,10 +64,12 @@ pub fn get_current_postgres_version() -> String {
     let numeric_version = ver_output
         .split_whitespace()
         .last()
-        .expect("Failed to parse postgres --version output")
+        .unwrap_or_else(|| {
+            print_error!("Error detecting PostgreSQL version");
+        })
         .to_string();
 
-    println!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
+    print_success!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
 
     numeric_version
 }

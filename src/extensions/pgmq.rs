@@ -1,4 +1,4 @@
-use crate::{common::run, structs::ExtensionVersionCompatibility, test};
+use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -15,7 +15,7 @@ static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
 pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
     let version = match VERSIONS.get_version(&pg_version.to_owned()) {
         Some(v) => v,
-        None => panic!("Unsupported PostgreSQL version"),
+        None => print_error!("Unsupported PostgreSQL version"),
     };
 
     tokio::task::spawn_blocking(move || {
@@ -35,5 +35,5 @@ pub async fn run_test() {
     sqlx::query("CREATE EXTENSION pgmq")
         .execute(pool)
         .await
-        .expect("Error to verify postgis extension");
+        .unwrap_or_else(|_| print_error!("Error to create pgmq extension"));
 }

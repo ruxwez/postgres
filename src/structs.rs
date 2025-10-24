@@ -1,5 +1,7 @@
 use clap::Parser;
 
+use crate::print_error;
+
 pub struct ExtensionVersionCompatibility<'a> {
     pub v16: &'a str,
     pub v17: &'a str,
@@ -9,7 +11,10 @@ pub struct ExtensionVersionCompatibility<'a> {
 impl ExtensionVersionCompatibility<'static> {
     pub fn get_version(&self, version: &str) -> Option<String> {
         if version.contains('.') {
-            let major_version = version.split('.').next().unwrap();
+            let major_version = version.split('.').next().unwrap_or_else(|| {
+                print_error!("Error extracting major version from {}", version);
+            });
+
             return self.get_version(major_version);
         }
 
@@ -27,8 +32,4 @@ pub struct CLI {
     // Test mode
     #[arg(short, long, default_value_t = false)]
     pub test_mode: bool,
-
-    // PG Version
-    #[arg(long, default_value_t = String::from("ignore"))]
-    pub pg_version: String,
 }

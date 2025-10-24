@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::print_success;
+
 mod pgmq;
 mod pgvector;
 mod postgis;
@@ -19,5 +21,5 @@ pub async fn run_tests() {
     pgvector::run_test().await;
     pgmq::run_test().await;
 
-    println!("All extension tests passed!");
+    print_success!("All extension tests passed!");
 }

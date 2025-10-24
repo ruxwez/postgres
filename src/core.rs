@@ -1,23 +1,23 @@
 use std::sync::Arc;
 
-use crate::{common::run, extensions};
+use crate::{common::run, extensions, print_error, print_message, print_success};
 
 pub async fn installer(pg_version: String) {
     if !cfg!(unix) {
-        panic!("❌ The installer only supports Unix-like operating systems.");
+        print_error!("❌ The installer only supports Unix-like operating systems.");
     }
 
     let pg_version = Arc::new(pg_version);
 
     let pg_major = pg_version.split(".").next().unwrap();
 
-    println!(
+    print_message!(
         "🚀 Installing PostgreSQL extensions for version {}",
         pg_version
     );
 
     // Install necessary packages
-    println!("📦 Installing build dependencies...");
+    print_message!("📦 Installing build dependencies...");
     run(&format!(
         "apt-get update && apt-get install -y --no-install-recommends \
          postgresql-contrib \
@@ -29,11 +29,11 @@ pub async fn installer(pg_version: String) {
     ));
 
     // Install extensions
-    println!("🔧 Installing extensions in parallel...");
+    print_message!("🔧 Installing extensions in parallel...");
     extensions::install(pg_version.clone()).await;
 
     // Clean up build packages to reduce image size
-    println!("🧹 Cleaning up to reduce image size...");
+    print_message!("🧹 Cleaning up to reduce image size...");
     run(&format!(
         "apt-get purge -y --auto-remove \
          git \
@@ -52,5 +52,5 @@ pub async fn installer(pg_version: String) {
         pg_major
     ));
 
-    println!("✅ Installation completed successfully!");
+    print_success!("Installation completed successfully!");
 }

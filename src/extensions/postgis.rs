@@ -1,6 +1,6 @@
 use std::sync::{Arc, LazyLock};
 
-use crate::{common::run, structs::ExtensionVersionCompatibility, test};
+use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
 
 static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
     LazyLock::new(|| ExtensionVersionCompatibility {
@@ -31,5 +31,5 @@ pub async fn run_test() {
     sqlx::query("CREATE EXTENSION postgis")
         .execute(pool)
         .await
-        .expect("Error to verify postgis extension");
+        .unwrap_or_else(|_| print_error!("Error to create postgis extension"));
 }

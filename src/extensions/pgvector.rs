@@ -1,4 +1,4 @@
-use crate::{common::run, structs::ExtensionVersionCompatibility, test};
+use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -39,5 +39,5 @@ pub async fn run_test() {
     sqlx::query("CREATE EXTENSION vector")
         .execute(pool)
         .await
-        .expect("Error to verify postgis extension");
+        .unwrap_or_else(|_| print_error!("Error to create vector extension"));
 }
