@@ -1,3 +1,5 @@
+use clap::Parser;
+
 pub struct ExtensionVersionCompatibility<'a> {
     pub v16: &'a str,
     pub v17: &'a str,
@@ -18,4 +20,15 @@ impl ExtensionVersionCompatibility<'static> {
             _ => None,
         }
     }
+}
+
+#[derive(Parser, Debug)]
+pub struct CLI {
+    // Test mode
+    #[arg(short, long, default_value_t = false)]
+    pub test_mode: bool,
+
+    // PG Version
+    #[arg(long, default_value_t = String::from("ignore"))]
+    pub pg_version: String,
 }

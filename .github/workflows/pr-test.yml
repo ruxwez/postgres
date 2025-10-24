@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build (no push) — PostgreSQL ${{ matrix.postgres_version }} / ${{ matrix.platform }}
+    name: Test — PostgreSQL ${{ matrix.postgres_version }} / ${{ matrix.platform }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -45,8 +45,12 @@ jobs:
             pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}
           build-args: |
             POSTGRES_VERSION=${{ matrix.postgres_version }}
+            TEST_MODE=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Execute test inside the built image
+        run: |
+          docker run --rm pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }} pg_config
 
       - name: Output build metadata
         run: |

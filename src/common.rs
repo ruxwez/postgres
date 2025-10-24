@@ -28,3 +28,21 @@ pub fn run_output(cmd: &str) -> String {
 
     String::from_utf8_lossy(&output.stdout).trim().to_string()
 }
+
+pub fn get_current_postgres_version() -> String {
+    
+    println!("🔎 Detecting PostgreSQL version from the base image (requested: latest)...");
+    // Try `postgres --version`. This requires that the base image already provides the postgres binary.
+    let ver_output = run_output("postgres --version");
+    // Typical output: "postgres (PostgreSQL) 15.3"
+    // We take the last whitespace-separated token as the numeric version.
+    let numeric_version = ver_output
+        .split_whitespace()
+        .last()
+        .expect("Failed to parse postgres --version output")
+        .to_string();
+
+    println!("ℹ️ Detected PostgreSQL version: {}", numeric_version);
+
+    numeric_version
+}
