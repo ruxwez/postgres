@@ -1,4 +1,4 @@
-use crate::{common::run, structs::ExtensionVersionCompatibility};
+use crate::{common::run, structs::ExtensionVersionCompatibility, test};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -27,4 +27,13 @@ pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
         run("cd /tmp/pgmq/pgmq-extension && make && make install");
         fs::remove_dir_all("/tmp/pgmq").ok();
     })
+}
+
+pub async fn run_test() {
+    let pool = test::get_pool();
+
+    sqlx::query("CREATE EXTENSION pgmq")
+        .execute(pool)
+        .await
+        .expect("Error to verify postgis extension");
 }

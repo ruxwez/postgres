@@ -13,3 +13,11 @@ pub async fn install(pg_version: Arc<String>) {
     // Wait for all installations to complete
     let _ = tokio::join!(pgmq_handle, pgvector_handle);
 }
+
+pub async fn run_tests() {
+    postgis::run_test().await;
+    pgvector::run_test().await;
+    pgmq::run_test().await;
+
+    println!("All extension tests passed!");
+}

@@ -1,4 +1,4 @@
-name: PR - Build (amd64, arm64)
+name: PR - Build & Test Extensions
 
 on:
   pull_request:
@@ -13,12 +13,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Test — PostgreSQL ${{ matrix.postgres_version }} / ${{ matrix.platform }}
+  build-and-test:
+    name: PostgreSQL ${{ matrix.postgres_version }} / ${{ matrix.platform }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        postgres_version: ["latest", "18", "17", "17.6", "16", "16.10"]
+        postgres_version: ["18", "17", "17.6", "16", "16.10"]
         platform: ["linux/amd64"]
       fail-fast: false
 
@@ -26,7 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (for multi-arch builds)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -34,45 +34,35 @@ jobs:
         with:
           install: true
 
-      - name: Build image for ${{ matrix.platform }} (no push)
+      - name: Build test image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: ${{ matrix.platform }}
           push: false
-          load: false
-          tags: |
-            pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}
+          load: true
+          tags: postgres-test:${{ matrix.postgres_version }}
           build-args: |
             POSTGRES_VERSION=${{ matrix.postgres_version }}
             TEST_MODE=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Execute test inside the built image
-        run: |
-          docker run --rm pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }} pg_config
+          cache-from: type=gha,scope=postgres-${{ matrix.postgres_version }}
+          cache-to: type=gha,mode=max,scope=postgres-${{ matrix.postgres_version }}
 
-      - name: Output build metadata
+      - name: Run extension tests
+        timeout-minutes: 5
         run: |
-          echo "✅ Build completed successfully"
-          echo "Built (multi-arch) for POSTGRES_VERSION=${{ matrix.postgres_version }} PLATFORM=${{ matrix.platform }}"
-          echo "Tag used: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}"
+          docker run --rm \
+            -e POSTGRES_PASSWORD=testmode \
+            postgres-test:${{ matrix.postgres_version }} \
+            bash -c "docker-entrypoint.sh postgres & sleep 5 && until pg_isready -U postgres; do sleep 1; done && /usr/local/bin/installer --test-mode"
 
-  # Job resumen que agrupa todos los builds de la matriz
-  build-complete:
-    name: All builds passed
+  test-summary:
+    name: Test Summary
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-and-test
     if: always()
 
     steps:
-      - name: Check build matrix status
-        if: needs.build.result != 'success'
-        run: |
-          echo "❌ One or more builds failed"
-          exit 1
-
-      - name: All builds passed
-        run: |
-          echo "✅ All PostgreSQL versions built successfully"
-          echo "Ready to merge!"
+      - name: Check results
+        if: needs.build-and-test.result != 'success'
+        run: exit 1

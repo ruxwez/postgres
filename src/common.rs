@@ -30,7 +30,6 @@ pub fn run_output(cmd: &str) -> String {
 }
 
 pub fn get_current_postgres_version() -> String {
-    
     println!("🔎 Detecting PostgreSQL version from the base image (requested: latest)...");
     // Try `postgres --version`. This requires that the base image already provides the postgres binary.
     let ver_output = run_output("postgres --version");

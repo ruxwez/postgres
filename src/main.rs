@@ -4,14 +4,16 @@ mod common;
 mod core;
 mod extensions;
 mod structs;
-mod tests;
+mod test;
 
 #[tokio::main]
 async fn main() {
     let cli = structs::CLI::parse();
 
     if cli.test_mode {
-        return tests::run().await;
+        test::init_db_pool().await;
+
+        return extensions::run_tests().await;
     }
 
     // If user passed "latest", detect the numeric version from the installed postgres binary.

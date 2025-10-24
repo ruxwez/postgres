@@ -1,6 +1,8 @@
 use std::sync::{Arc, LazyLock};
 
-use crate::{common::run, structs::ExtensionVersionCompatibility};
+use sqlx::Executor;
+
+use crate::{common::run, structs::ExtensionVersionCompatibility, test};
 
 static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
     LazyLock::new(|| ExtensionVersionCompatibility {
@@ -23,4 +25,13 @@ pub fn install(pg_version: Arc<String>) {
            postgresql-{}-postgis-{}-scripts",
         pg_major, ex_version, pg_major, ex_version
     ));
+}
+
+pub async fn run_test() {
+    let pool = test::get_pool();
+
+    sqlx::query("CREATE EXTENSION postgis")
+        .execute(pool)
+        .await
+        .expect("Error to verify postgis extension");
 }

@@ -1,4 +1,4 @@
-use crate::{common::run, structs::ExtensionVersionCompatibility};
+use crate::{common::run, structs::ExtensionVersionCompatibility, test};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -31,4 +31,13 @@ pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
         // Clean up the temporary directory
         fs::remove_dir_all("/tmp/pgvector").ok();
     })
+}
+
+pub async fn run_test() {
+    let pool = test::get_pool();
+
+    sqlx::query("CREATE EXTENSION avector")
+        .execute(pool)
+        .await
+        .expect("Error to verify postgis extension");
 }
