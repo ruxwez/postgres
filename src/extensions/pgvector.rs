@@ -36,7 +36,7 @@ pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
 pub async fn run_test() {
     let pool = test::get_pool();
 
-    sqlx::query("CREATE EXTENSION avector")
+    sqlx::query("CREATE EXTENSION vector")
         .execute(pool)
         .await
         .expect("Error to verify postgis extension");

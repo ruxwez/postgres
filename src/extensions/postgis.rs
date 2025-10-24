@@ -1,7 +1,5 @@
 use std::sync::{Arc, LazyLock};
 
-use sqlx::Executor;
-
 use crate::{common::run, structs::ExtensionVersionCompatibility, test};
 
 static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
