@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::{common::get_major_version, print_error};
+use crate::common::get_major_version;
 
 pub struct ExtensionVersionCompatibility<'a> {
     pub v16: &'a str,
