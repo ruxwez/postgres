@@ -1,4 +1,4 @@
-use crate::{common::run, structs::ExtensionVersionCompatibility};
+use crate::{common::run, print_error, structs::ExtensionVersionCompatibility, test};
 use std::{
     fs,
     sync::{Arc, LazyLock},
@@ -15,7 +15,7 @@ static VERSIONS: LazyLock<ExtensionVersionCompatibility> =
 pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
     let version = match VERSIONS.get_version(&pg_version.to_owned()) {
         Some(v) => v,
-        None => panic!("Unsupported PostgreSQL version"),
+        None => print_error!("Unsupported PostgreSQL version"),
     };
 
     tokio::task::spawn_blocking(move || {
@@ -31,4 +31,13 @@ pub fn install(pg_version: Arc<String>) -> JoinHandle<()> {
         // Clean up the temporary directory
         fs::remove_dir_all("/tmp/pgvector").ok();
     })
+}
+
+pub async fn run_test() {
+    let pool = test::get_pool();
+
+    sqlx::query("CREATE EXTENSION vector")
+        .execute(pool)
+        .await
+        .unwrap_or_else(|_| print_error!("Error to create vector extension"));
 }
