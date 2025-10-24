@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        postgres_version: ["latest", "18", "17", "17.6", "16", "16.10"]
+        postgres_version: ["latest", "18", "17", "16"]
         platform: ["linux/amd64"]
       fail-fast: false
 
