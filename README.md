@@ -57,3 +57,4 @@ Also, if you want to add support for a new major PostgreSQL release (for example
 ## How to contribute
 
 See `CONTRIBUTING.md` for detailed contribution guidelines: how to report bugs or feature requests (use the provided issue templates), the PR workflow, and step-by-step instructions to add a new PostgreSQL extension. A Spanish translation of the contributor guide is available at `CONTRIBUTING.es.md` and is referenced from `README.es.md`.
+
