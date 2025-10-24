@@ -1,6 +1,6 @@
 # Instalador de extensiones para PostgreSQL (imagen Docker derivada)
 ![Docker Pulls](https://img.shields.io/docker/pulls/ruxwez/postgres?style=flat-square)
-![GitHub branch status](https://img.shields.io/github/checks-status/ruxwez/postgres/main?style=flat-square)
+![GitHub branch check runs](https://img.shields.io/github/check-runs/ruxwez/postgres/main?cacheSeconds=60)
 ![GitHub contributors](https://img.shields.io/github/contributors/ruxwez/postgres?style=flat-square)
 ![GitHub License](https://img.shields.io/github/license/ruxwez/postgres?style=flat-square)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/ruxwez/postgres?style=flat-square)
