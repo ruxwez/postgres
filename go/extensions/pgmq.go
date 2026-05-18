@@ -8,7 +8,7 @@ import (
 
 var PGMQ = plyd.New(
 	"pgmq",
-	plyd.HandlersList{
+	plyd.NewHandlersList(
 		plyd.NewHandler("v16.0.0", func(ins *instance.InstanceInfo) error {
 			fmt.Println("v16.0.0")
 			return nil
@@ -21,5 +21,5 @@ var PGMQ = plyd.New(
 			fmt.Println(">=16.0.0, <=17.0")
 			return nil
 		}),
-	},
+	),
 )
