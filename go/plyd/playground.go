@@ -51,9 +51,9 @@ func (p *Playground) matchHandler(v string) (HandlerFunc, error) {
 // Execute the playground with the given instance information
 func (p *Playground) Run(ins *instance.InstanceInfo) error {
 
-	log.Printf("[PLYD]: Installing '%s' for PostgreSQL '%s'", p.Name, ins.PGVersion)
+	log.Printf("[PLYD]: Installing '%s' for PostgreSQL '%s'", p.Name, ins.PostgreSQL.Version)
 
-	handler, err := p.matchHandler(string(ins.PGVersion))
+	handler, err := p.matchHandler(string(ins.PostgreSQL.Version))
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (p *Playground) Run(ins *instance.InstanceInfo) error {
 		return err
 	}
 
-	log.Printf("[PLYD]: Successfully installed '%s' for PostgreSQL '%s'", p.Name, ins.PGVersion)
+	log.Printf("[PLYD]: Successfully installed '%s' for PostgreSQL '%s'", p.Name, ins.PostgreSQL.Version)
 
 	return nil
 }

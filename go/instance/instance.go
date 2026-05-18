@@ -12,9 +12,14 @@ import (
 type PGVersion string
 
 type InstanceInfo struct {
-	PGVersion PGVersion
-	OS        string
-	Arch      string
+	OS         string
+	Arch       string
+	PostgreSQL PGInstance
+}
+
+type PGInstance struct {
+	Version PGVersion
+	Mayor   string
 }
 
 func detectPGVersion() PGVersion {
@@ -43,8 +48,11 @@ func New() *InstanceInfo {
 	}
 
 	return &InstanceInfo{
-		PGVersion: detectPGVersion(),
-		OS:        runtime.GOOS,
-		Arch:      runtime.GOARCH,
+		PostgreSQL: PGInstance{
+			Version: detectPGVersion(),
+			Mayor:   strings.Split(string(detectPGVersion()), ".")[0],
+		},
+		OS:   runtime.GOOS,
+		Arch: runtime.GOARCH,
 	}
 }

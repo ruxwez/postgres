@@ -1,7 +1,6 @@
 package extensions
 
 import (
-	"log"
 	"postgres-extensor/instance"
 	"postgres-extensor/plyd"
 )
@@ -9,17 +8,19 @@ import (
 var pgmq = plyd.New(
 	"pgmq",
 	plyd.NewHandlersList(
-		plyd.NewHandler("v16.0.0", func(ins *instance.InstanceInfo) error {
-			log.Println("v16.0.0")
-			return nil
-		}),
-		plyd.NewHandler("<=16.0.0", func(ins *instance.InstanceInfo) error {
-			log.Println("<=16.0.0")
-			return nil
-		}),
-		plyd.NewHandler(">=16.0.0, <=17.10", func(ins *instance.InstanceInfo) error {
-			log.Println(">=16.0.0, <=17.0")
-			return nil
+		plyd.NewHandler(">=14.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
+			err := plyd.Run(
+				"git clone --branch v1.11.1 --depth 1 " +
+					"https://github.com/pgmq/pgmq.git /tmp/pgmq",
+			)
+			if err != nil {
+				return err
+			}
+			err = plyd.Run("cd /tmp/pgmq/pgmq-extension && make && make install")
+			if err != nil {
+				return err
+			}
+			return plyd.Run("rm -rf /tmp/pgmq")
 		}),
 	),
 )
