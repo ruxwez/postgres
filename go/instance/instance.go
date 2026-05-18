@@ -20,18 +20,18 @@ type InstanceInfo struct {
 func detectPGVersion() PGVersion {
 	out, err := exec.Command("postgres", "--version").Output()
 	if err != nil {
-		panic("failed to detect PostgreSQL version: " + err.Error())
+		panic("Failed to detect PostgreSQL version: " + err.Error())
 	}
 
 	re := regexp.MustCompile(`([\d.]+)`)
 	match := re.FindString(strings.TrimSpace(string(out)))
 	if match == "" {
-		panic("failed to parse PostgreSQL version from: " + string(out))
+		panic("Failed to parse PostgreSQL version from: " + string(out))
 	}
 
 	normalized, err := utils.NormalizeVersion(match)
 	if err != nil {
-		panic("failed to parse PostgreSQL version from: " + string(out) + ": " + err.Error())
+		panic("Failed to normalize PostgreSQL version from: " + string(out) + ": " + err.Error())
 	}
 
 	return PGVersion(normalized)
@@ -39,7 +39,7 @@ func detectPGVersion() PGVersion {
 
 func New() *InstanceInfo {
 	if runtime.GOOS != "linux" {
-		panic("this software only runs on Linux")
+		panic("This software only runs on Linux")
 	}
 
 	return &InstanceInfo{

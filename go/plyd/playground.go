@@ -1,0 +1,64 @@
+package plyd
+
+import (
+	"fmt"
+
+	"postgres-extensor/instance"
+
+	"github.com/Masterminds/semver/v3"
+)
+
+type Playground struct {
+	Name     string
+	handlers HandlersList
+}
+
+func New(name string, handlers HandlersList) *Playground {
+	return &Playground{
+		Name:     name,
+		handlers: handlers,
+	}
+}
+
+// Match the instance's PostgreSQL version to the appropriate handler
+func (p *Playground) matchHandler(v string) (HandlerFunc, error) {
+
+	for _, h := range p.handlers {
+		if h.Range == v {
+			return h.Runner, nil
+		}
+	}
+
+	version, err := semver.NewVersion(v)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid version: %s", v)
+	}
+
+	for _, h := range p.handlers {
+		constraint, err := semver.NewConstraint(h.Range)
+		if err != nil {
+			continue
+		}
+		if constraint.Check(version) {
+			return h.Runner, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No handler found for version %s", v)
+}
+
+// Execute the playground with the given instance information
+func (p *Playground) Run(ins *instance.InstanceInfo) error {
+
+	handler, err := p.matchHandler(string(ins.PGVersion))
+	if err != nil {
+		return err
+	}
+
+	err = handler(ins)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

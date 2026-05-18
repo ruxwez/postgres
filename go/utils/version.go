@@ -2,19 +2,19 @@ package utils
 
 import (
 	"fmt"
-	"strings"
 
-	"golang.org/x/mod/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 func NormalizeVersion(v string) (string, error) {
-	v = strings.TrimSpace(v)
-	if !strings.HasPrefix(v, "v") {
-		v = "v" + v
+	ver, err := semver.NewVersion(v)
+	if err != nil {
+		return "", fmt.Errorf("Invalid version: %s", v)
 	}
-	canonical := semver.Canonical(v)
-	if canonical == "" {
-		return "", fmt.Errorf("invalid version: %s", v)
-	}
-	return canonical, nil
+	return ver.String(), nil
+}
+
+func ValidateVersionRange(rng string) error {
+	_, err := semver.NewConstraint(rng)
+	return err
 }
