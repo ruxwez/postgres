@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        postgres_version: ["latest", "18", "17", "16"]
+        postgres_version: ["latest", "18", "17", "16", "15", "14", "13"]
         platform: ["linux/amd64"]
       fail-fast: false
 
@@ -38,6 +38,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: .docker/Dockerfile
           platforms: ${{ matrix.platform }}
           push: false
           load: false
