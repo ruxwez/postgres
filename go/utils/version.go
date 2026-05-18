@@ -16,5 +16,5 @@ func NormalizeVersion(v string) (string, error) {
 	if canonical == "" {
 		return "", fmt.Errorf("invalid version: %s", v)
 	}
-	return strings.TrimPrefix(canonical, "v"), nil
+	return canonical, nil
 }
