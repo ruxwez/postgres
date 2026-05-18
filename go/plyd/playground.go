@@ -2,6 +2,7 @@ package plyd
 
 import (
 	"fmt"
+	"log"
 
 	"postgres-extensor/instance"
 
@@ -50,6 +51,8 @@ func (p *Playground) matchHandler(v string) (HandlerFunc, error) {
 // Execute the playground with the given instance information
 func (p *Playground) Run(ins *instance.InstanceInfo) error {
 
+	log.Printf("[PLYD]: Installing '%s' for PostgreSQL '%s'", p.Name, ins.PGVersion)
+
 	handler, err := p.matchHandler(string(ins.PGVersion))
 	if err != nil {
 		return err
@@ -59,6 +62,8 @@ func (p *Playground) Run(ins *instance.InstanceInfo) error {
 	if err != nil {
 		return err
 	}
+
+	log.Printf("[PLYD]: Successfully installed '%s' for PostgreSQL '%s'", p.Name, ins.PGVersion)
 
 	return nil
 }
