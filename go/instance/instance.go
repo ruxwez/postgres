@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
+	"postgres-extensor/utils"
 )
 
 type PGVersion string
@@ -21,13 +23,18 @@ func detectPGVersion() PGVersion {
 		panic("failed to detect PostgreSQL version: " + err.Error())
 	}
 
-	re := regexp.MustCompile(`(\d+\.\d+)`)
-	match := re.FindStringSubmatch(strings.TrimSpace(string(out)))
-	if match == nil {
+	re := regexp.MustCompile(`([\d.]+)`)
+	match := re.FindString(strings.TrimSpace(string(out)))
+	if match == "" {
 		panic("failed to parse PostgreSQL version from: " + string(out))
 	}
 
-	return PGVersion(match[1])
+	normalized, err := utils.NormalizeVersion(match)
+	if err != nil {
+		panic("failed to parse PostgreSQL version from: " + string(out) + ": " + err.Error())
+	}
+
+	return PGVersion(normalized)
 }
 
 func New() *InstanceInfo {
