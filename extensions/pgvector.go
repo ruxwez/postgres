@@ -10,7 +10,7 @@ import (
 var pgvector = plyd.New(
 	"pgvector",
 	plyd.NewHandlersList(
-		plyd.NewHandler(">=13.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
+		plyd.NewHandler(">=14.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
 			err := plyd.Run(
 				"git clone --branch v0.8.2 --depth 1 " +
 					"https://github.com/pgvector/pgvector.git /tmp/pgvector",

@@ -10,7 +10,7 @@ import (
 var postgresContrib = plyd.New(
 	"postgres-contrib",
 	plyd.NewHandlersList(
-		plyd.NewHandler(">=13.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
+		plyd.NewHandler(">=14.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
 			// In Debian/Ubuntu pgdg distributions, contrib modules are bundled within the main postgresql package.
 			pkg := fmt.Sprintf("postgresql-%s", ins.PostgreSQL.Mayor)
 			if err := plyd.Run(fmt.Sprintf("apt-get install -y -qq %s", pkg)); err != nil {

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        postgres_version: ["latest", "18", "17", "16", "15", "14", "13"]
+        postgres_version: ["latest", "18", "17", "16", "15", "14"]
         platform: ["linux/amd64"]
       fail-fast: false
 
@@ -41,7 +41,7 @@ jobs:
           file: .docker/Dockerfile
           platforms: ${{ matrix.platform }}
           push: false
-          load: false
+          load: true
           tags: |
             pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}
           build-args: |
@@ -54,6 +54,12 @@ jobs:
           echo "✅ Build completed successfully"
           echo "Built (multi-arch) for POSTGRES_VERSION=${{ matrix.postgres_version }} PLATFORM=${{ matrix.platform }}"
           echo "Tag used: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}"
+
+      - name: Run runtime test
+        env:
+          SKIP_BUILD: "true"
+          IMAGE: pr-test/${{ github.repository }}:postgres-${{ matrix.postgres_version }}-pr${{ github.event.pull_request.number }}
+        run: bash .docker/runtime-test.sh
 
   # Job resumen que agrupa todos los builds de la matriz
   build-complete:

@@ -1,6 +1,6 @@
 ARG POSTGRES_VERSION=17
 
-FROM docker.io/golang:1.26-alpine AS builder
+FROM mirror.gcr.io/golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY . .
 
 RUN go build -o main .
 
-FROM docker.io/postgres:${POSTGRES_VERSION}
+FROM mirror.gcr.io/postgres:${POSTGRES_VERSION}
 
 WORKDIR /opt/app
 

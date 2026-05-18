@@ -10,7 +10,7 @@ import (
 var buildDepsRemove = plyd.New(
 	"build-deps-remove",
 	plyd.NewHandlersList(
-		plyd.NewHandler(">=13.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
+		plyd.NewHandler(">=14.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
 			if err := plyd.Run(fmt.Sprintf(
 				"apt-get remove -y -qq git make gcc postgresql-server-dev-%s",
 				ins.PostgreSQL.Mayor,
