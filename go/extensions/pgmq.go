@@ -1,6 +1,8 @@
 package extensions
 
 import (
+	"fmt"
+
 	"postgres-extensor/instance"
 	"postgres-extensor/plyd"
 )
@@ -20,6 +22,12 @@ var pgmq = plyd.New(
 			if err != nil {
 				return err
 			}
+
+			// Verify installation
+			if err := plyd.Run("ls $(pg_config --sharedir)/extension/pgmq.control > /dev/null"); err != nil {
+				return fmt.Errorf("failed to verify pgmq installation: %w", err)
+			}
+
 			return plyd.Run("rm -rf /tmp/pgmq")
 		}),
 	),
