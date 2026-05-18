@@ -6,5 +6,7 @@ var Playgrounds = []*plyd.Playground{
 	buildDepsInstall,
 	pgmq,
 	pgvector,
+	postgis,
+	postgresContrib,
 	buildDepsRemove,
 }
