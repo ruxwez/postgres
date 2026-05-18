@@ -10,7 +10,7 @@ import (
 var buildDepsInstall = plyd.New(
 	"build-deps-install",
 	plyd.NewHandlersList(
-		plyd.NewHandler(">=13.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
+		plyd.NewHandler(">=14.0.0, <19.0.0", func(ins *instance.InstanceInfo) error {
 			if err := plyd.Run("apt-get update -qq"); err != nil {
 				return err
 			}
