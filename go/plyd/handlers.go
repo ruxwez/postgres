@@ -1,6 +1,8 @@
 package plyd
 
 import (
+	"sort"
+
 	"postgres-extensor/instance"
 	"postgres-extensor/utils"
 )
@@ -26,7 +28,11 @@ func NewHandler(rng string, runner HandlerFunc) Handler {
 
 type HandlersList []Handler
 
+// NewHandlersList sorts handlers with specific versions first, ranges last, ascending.
 func NewHandlersList(handlers ...Handler) HandlersList {
+	sort.Slice(handlers, func(i, j int) bool {
+		return utils.VersionLess(handlers[i].Range, handlers[j].Range)
+	})
 
 	return handlers
 }

@@ -18,3 +18,21 @@ func ValidateVersionRange(rng string) error {
 	_, err := semver.NewConstraint(rng)
 	return err
 }
+
+// VersionLess returns true if a should be sorted before b.
+// Specific versions come before ranges; both groups are sorted ascending.
+func VersionLess(a, b string) bool {
+	va, erra := semver.NewVersion(a)
+	vb, errb := semver.NewVersion(b)
+
+	switch {
+	case erra == nil && errb == nil:
+		return va.LessThan(vb)
+	case erra == nil:
+		return true
+	case errb == nil:
+		return false
+	default:
+		return a < b
+	}
+}
