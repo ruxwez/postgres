@@ -2,33 +2,19 @@ package utils
 
 import (
 	"fmt"
-	"regexp"
+	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 func NormalizeVersion(v string) (string, error) {
-	re := regexp.MustCompile(`(\d+)(?:\.(\d+))?(?:\.(\d+))?`)
-	parts := re.FindStringSubmatch(v)
-	if parts == nil || parts[0] == "" {
-		return "", fmt.Errorf("no version found in: %s", v)
+	v = strings.TrimSpace(v)
+	if !strings.HasPrefix(v, "v") {
+		v = "v" + v
 	}
-
-	major := parts[1]
-	minor := parts[2]
-	patch := parts[3]
-
-	version := major
-	if minor != "" {
-		version += "." + minor
-	} else {
-		version += ".0"
+	canonical := semver.Canonical(v)
+	if canonical == "" {
+		return "", fmt.Errorf("invalid version: %s", v)
 	}
-	if patch != "" {
-		version += "." + patch
-	} else {
-		version += ".0"
-	}
-
-	return version, nil
+	return strings.TrimPrefix(canonical, "v"), nil
 }
-
-
