@@ -1,51 +1,46 @@
-# Contribuyendo
+# Contribuir
 
 > [Read in English](./CONTRIBUTING.md)
 
 Gracias por tu interés en contribuir a PostgreSQL Extensor.
 
-## Reportar issues
+## Reportar problemas
 
-Usa las plantillas en `.github/ISSUE_TEMPLATE/`:
+Usa las plantillas de `.github/ISSUE_TEMPLATE/`:
 
-- **Bug report** — para errores o comportamientos inesperados.
-- **Feature request** — para sugerir nuevas extensiones o funcionalidades.
-- **Custom** — para cualquier otro caso.
+- **Bug report:** para errores o comportamientos inesperados.
+- **Feature request:** para proponer nuevas extensiones o funcionalidades.
+- **Custom:** para cualquier otra cosa.
 
 ## Pull Requests
 
-1. Crea un fork del repositorio.
+1. Haz un fork del repositorio.
 2. Crea una rama con un nombre descriptivo: `feat/pg-partman`, `fix/pgvector-build`.
-3. Asegúrate de que los tests pasen para todas las versiones de PostgreSQL:
+3. Ejecuta los tests de al menos una versión en local:
 
    ```sh
-   make test
-   make runtime-test PG_VERSION=18
+   make test PG_VERSION=18
    ```
 
-4. Si agregas una nueva extensión, incluye:
-   - El playground en `extensions/`.
-   - El registro en `extensions/extensions.go`.
-   - La verificación en `.docker/runtime-test.sql`.
-   - Actualiza la documentación relevante en `.docs/`.
+4. Si añades una extensión, sigue [Extensiones](./.docs/extensions.es.md). Se reduce a unas líneas en el `Dockerfile`, un `extensions/<nombre>/test.sql` y una fila en la tabla del README.
+5. Abre el PR contra `main`. El CI construye y prueba todas las versiones en amd64 y arm64.
 
-5. Abre el PR contra `main`. Los workflows de CI ejecutarán los tests automáticamente para todas las versiones soportadas.
+Al hacer merge solo se actualizan los tags móviles (`18`, `latest`). Los mantenedores sacan releases para actualizar los tags con versión (ver [Releases](./.docs/releases.es.md)).
 
-## Guías
+## Pautas
 
-- Sigue el estilo del código existente.
-- No agregues dependencias innecesarias a `go.mod`.
-- Los playgrounds deben ser idempotentes y limpiar los archivos temporales.
-- Documenta los rangos de versiones semver claramente.
+- Usa paquetes apt de PGDG antes que compilar desde el código fuente.
+- Fija la versión de todas las extensiones, también las de apt, con un `ARG` y un comentario `# renovate:`.
+- Las herramientas de compilación van en `build-base`, nunca en la etapa final.
 
 ## Estructura del proyecto
 
 ```
-.docker/          — Dockerfiles y scripts de test
-.docs/            — Documentación
-.github/          — Workflows CI/CD y templates
-extensions/       — Definición de playgrounds
-instance/         — Detección del entorno (OS, versión PG)
-plyd/             — Motor de playgrounds (core framework)
-utils/            — Utilidades de versionado semver
+Dockerfile            Definición de la imagen (una etapa por extensión compilada)
+docker-bake.hcl       Versiones de PostgreSQL y tags
+extensions/<nombre>/  test.sql de cada extensión
+tests/run.sh          Ejecuta todos los test.sql contra una imagen
+.github/workflows/    CI: build, test, publicación, release
+.github/scripts/      Scripts que usa el CI (release notes)
+.docs/                Documentación
 ```

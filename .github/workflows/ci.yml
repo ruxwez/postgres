@@ -1,0 +1,261 @@
+name: CI
+
+# Pull requests: build and test every version on amd64 and arm64.
+# main / weekly / manual: same, then publish the floating tags (18, latest...).
+# vX.Y.Z git tag: same, then also publish the release tags (18-vX.Y.Z, 18-vX)
+# and create the GitHub release.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  schedule:
+    # Weekly rebuild to pick up security fixes in the postgres base images.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Read by docker-bake.hcl.
+  IMAGE: ruxwez/postgres
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.targets.outputs.targets }}
+      release: ${{ steps.release.outputs.release }}
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: docker/setup-buildx-action@v3
+
+      - id: release
+        name: Check release
+        run: |
+          publish=false
+          release=
+          case "$GITHUB_REF" in
+            refs/heads/main)
+              [ "$GITHUB_EVENT_NAME" != pull_request ] && publish=true ;;
+            refs/tags/*)
+              publish=true
+              if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "::error::Release tags must look like v1.2.3, got $GITHUB_REF_NAME"
+                exit 1
+              fi
+              # Releases move the floating tags (18-v1, 18, latest), so an older
+              # version must never be released after a newer one.
+              newest="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
+              if [ "$newest" != "$GITHUB_REF_NAME" ]; then
+                echo "::error::$GITHUB_REF_NAME is not the newest release tag ($newest is)"
+                exit 1
+              fi
+              release="${GITHUB_REF_NAME#v}" ;;
+          esac
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - id: targets
+        run: echo "targets=$(docker buildx bake --print | jq -c '.target | keys')" >> "$GITHUB_OUTPUT"
+
+      # 18-v1.2.3 tags are immutable: refuse to build a release that already
+      # exists, before anything gets pushed.
+      - name: Check release tags are new
+        if: steps.release.outputs.release != ''
+        env:
+          RELEASE: ${{ steps.release.outputs.release }}
+        run: |
+          existing=()
+          for tag in $(docker buildx bake --print | jq -r --arg r "-v$RELEASE" '.target[].tags[] | select(endswith($r))'); do
+            if docker buildx imagetools inspect "$tag" >/dev/null 2>&1; then
+              existing+=("$tag")
+            fi
+          done
+          if [ "${#existing[@]}" -gt 0 ]; then
+            echo "::error::Already published, release tags are never overwritten: ${existing[*]}"
+            exit 1
+          fi
+
+  build:
+    name: ${{ matrix.target }} (${{ matrix.arch }})
+    needs: prepare
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.prepare.outputs.targets) }}
+        arch: [amd64, arm64]
+    env:
+      # Read by docker-bake.hcl.
+      RELEASE: ${{ needs.prepare.outputs.release }}
+      REVISION: ${{ github.sha }}
+      PUBLISH: ${{ needs.prepare.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          targets: ${{ matrix.target }}
+          load: true
+          set: |
+            *.platform=linux/${{ matrix.arch }}
+            *.tags=postgres-extensor:test
+            *.cache-from=type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}
+            *.cache-to=type=gha,mode=max,scope=${{ matrix.target }}-${{ matrix.arch }}
+
+      - name: Test
+        env:
+          SUMMARY_FILE: /tmp/summary/${{ matrix.target }}
+        run: |
+          mkdir -p /tmp/summary
+          ./tests/run.sh postgres-extensor:test
+
+      # Versions are the same on both architectures; one copy is enough for
+      # the release notes.
+      - uses: actions/upload-artifact@v4
+        if: env.RELEASE != '' && matrix.arch == 'amd64'
+        with:
+          name: summary-${{ matrix.target }}
+          path: /tmp/summary/${{ matrix.target }}
+          retention-days: 1
+
+      - name: Log in to Docker Hub
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PERSONAL_KEY }}
+
+      # Same build as above (served from the builder cache), pushed untagged.
+      # The publish job stitches the per-arch digests into tagged manifests.
+      - name: Push by digest
+        id: push
+        if: env.PUBLISH == 'true'
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          targets: ${{ matrix.target }}
+          set: |
+            *.platform=linux/${{ matrix.arch }}
+            *.tags=${{ env.IMAGE }}
+            *.output=type=image,push-by-digest=true,name-canonical=true,push=true
+            *.cache-from=type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}
+
+      - name: Export digest
+        if: env.PUBLISH == 'true'
+        env:
+          METADATA: ${{ steps.push.outputs.metadata }}
+        run: |
+          mkdir -p /tmp/digests
+          digest="$(jq -r '."${{ matrix.target }}"."containerimage.digest"' <<<"$METADATA")"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v4
+        if: env.PUBLISH == 'true'
+        with:
+          name: digest-${{ matrix.target }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  # Single required check for branch protection.
+  all-builds:
+    name: All builds passed
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - if: needs.build.result != 'success'
+        run: exit 1
+
+  publish:
+    # No matrix expression here: GitHub appends "(pg-18)" itself, and a skipped
+    # job (pull requests) shows a clean "Publish" instead of the raw expression.
+    name: Publish
+    needs: [prepare, build]
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    # A release and a push to main can finish at the same time; push the tags
+    # of each version one run at a time.
+    concurrency:
+      group: publish-${{ matrix.target }}
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.prepare.outputs.targets) }}
+    env:
+      RELEASE: ${{ needs.prepare.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digest-${{ matrix.target }}-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PERSONAL_KEY }}
+
+      - name: Create tagged manifest
+        run: |
+          mapfile -t tags < <(docker buildx bake --print "${{ matrix.target }}" | jq -r '.target[].tags[]')
+          args=()
+          for tag in "${tags[@]}"; do args+=(--tag "$tag"); done
+          for digest in /tmp/digests/*; do args+=("$IMAGE@sha256:$(basename "$digest")"); done
+          docker buildx imagetools create "${args[@]}"
+          docker buildx imagetools inspect "${tags[0]}"
+
+  release:
+    name: GitHub release
+    needs: [prepare, publish]
+    if: needs.prepare.outputs.release != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE: ${{ needs.prepare.outputs.release }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: summary-*
+          path: /tmp/summary
+          merge-multiple: true
+
+      - name: Create or update release
+        run: |
+          {
+            echo "## Images"
+            echo
+            .github/scripts/release-notes.sh "$RELEASE" /tmp/summary
+            echo
+            echo "Pin a digest (\`$IMAGE@sha256:...\`) if you need byte-for-byte reproducibility."
+          } > /tmp/images.md
+
+          # If the release was created by hand (e.g. from the GitHub UI), keep
+          # its text and append the image table.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            { gh release view "$GITHUB_REF_NAME" --json body -q .body; echo; cat /tmp/images.md; } > /tmp/notes.md
+            gh release edit "$GITHUB_REF_NAME" --notes-file /tmp/notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" \
+              --generate-notes --notes-file /tmp/images.md
+          fi

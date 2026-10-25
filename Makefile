@@ -1,13 +1,16 @@
 PG_VERSION ?= 18
+IMAGE ?= ruxwez/postgres
 
-.PHONY: test build runtime-test
+.PHONY: build test build-all
 
-test:
-	docker build -f .docker/Dockerfile.test -t postgres-extensor-test .
-	-docker rmi postgres-extensor-test > /dev/null
-
+# Build one version for the local platform.
 build:
-	docker build -f .docker/Dockerfile -t ruxwez/postgres:$(PG_VERSION) --build-arg POSTGRES_VERSION=$(PG_VERSION) .
+	docker buildx bake pg-$(PG_VERSION) --load
 
-runtime-test:
-	POSTGRES_VERSION=$(PG_VERSION) bash .docker/runtime-test.sh
+# Build one version and run every extensions/*/test.sql against it.
+test: build
+	./tests/run.sh $(IMAGE):$(PG_VERSION)
+
+# Build every version listed in docker-bake.hcl.
+build-all:
+	docker buildx bake --load
