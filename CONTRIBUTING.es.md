@@ -22,7 +22,7 @@ Usa las plantillas de `.github/ISSUE_TEMPLATE/`:
    make test PG_VERSION=18
    ```
 
-4. Si añades una extensión, sigue [Extensiones](./.docs/extensions.es.md). Se reduce a unas líneas en el `Dockerfile`, un `extensions/<nombre>/test.sql` y una fila en la tabla del README.
+4. Si añades una extensión, sigue [Extensiones](./.docs/extensions.es.md). Se reduce a una línea en `extensions/pgdg.txt` (o unas pocas en el `Dockerfile`), un `extensions/<nombre>/test.sql` y una fila en [Extensiones incluidas](./.docs/included-extensions.es.md).
 5. Abre el PR contra `main`. El CI construye y prueba todas las versiones en amd64 y arm64.
 
 Al hacer merge solo se actualizan los tags móviles (`18`, `latest`). Los mantenedores sacan releases para actualizar los tags con versión (ver [Releases](./.docs/releases.es.md)).
@@ -38,7 +38,9 @@ Al hacer merge solo se actualizan los tags móviles (`18`, `latest`). Los manten
 ```
 Dockerfile            Definición de la imagen (una etapa por extensión compilada)
 docker-bake.hcl       Versiones de PostgreSQL y tags
-extensions/<nombre>/  test.sql de cada extensión
+extensions/pgdg.txt   Paquetes de PGDG y sus versiones
+extensions/*.sh       Scripts de build que usa el Dockerfile
+extensions/<nombre>/  test.sql de cada extensión (más server.conf, … opcionales)
 tests/run.sh          Ejecuta todos los test.sql contra una imagen
 .github/workflows/    CI: build, test, publicación, release
 .github/scripts/      Scripts que usa el CI (release notes)

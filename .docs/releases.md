@@ -45,9 +45,15 @@ Or create the release from the GitHub UI with a new tag. CI then:
 
 If a publish job fails halfway (e.g. a Docker Hub error), use **Re-run failed jobs**. A full re-run would stop at step 2, because some tags already exist.
 
-## Labels
+## What an image contains
 
-Every image carries its versions as labels:
+Every image lists its extensions and their versions:
+
+```sh
+docker run --rm ruxwez/postgres:18-v1 cat /usr/share/postgres-extensor/extensions.txt
+```
+
+And carries these labels:
 
 ```sh
 docker inspect ruxwez/postgres:18-v1 --format '{{json .Config.Labels}}'
@@ -58,4 +64,3 @@ docker inspect ruxwez/postgres:18-v1 --format '{{json .Config.Labels}}'
 | `org.opencontainers.image.version` | project release (`1.4.0`), empty outside releases |
 | `org.opencontainers.image.revision` | git commit |
 | `io.github.ruxwez.postgres.postgresql.version` | PostgreSQL package version |
-| `io.github.ruxwez.postgres.<extension>.version` | version of each extension (pgvector, pgmq, postgis) |

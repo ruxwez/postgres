@@ -15,20 +15,23 @@ make test PG_VERSION=14
 
 ## Qué hace `tests/run.sh`
 
-1. Arranca la imagen con `POSTGRES_PASSWORD=postgres`.
+1. Arranca la imagen con `POSTGRES_PASSWORD=postgres` y la configuración de todos los `extensions/*/server.conf` (los valores de `shared_preload_libraries` se combinan).
 2. Espera a que PostgreSQL acepte conexiones TCP. El servidor temporal de inicialización del entrypoint solo escucha en el socket unix, así que la espera no termina antes de tiempo.
-3. Para cada `extensions/*/test.sql`, crea una base de datos nueva, ejecuta el archivo con `ON_ERROR_STOP=1` e imprime `PASS` (con las versiones instaladas) o `FAIL` (con el error).
-4. Termina con un código distinto de cero si algún test falla, después de ejecutarlos todos.
+3. Para cada `extensions/*/test.sql`, crea una base de datos nueva, ejecuta el archivo con `ON_ERROR_STOP=1` e imprime `PASS` (con las versiones de las extensiones que creó) o `FAIL` (con el error). Las extensiones que no soportan esa versión mayor de PostgreSQL salen como `SKIP`.
+4. Ejecuta los tests marcados como `isolated` en un servidor propio.
+5. Termina con un código distinto de cero si algún test falla, después de ejecutarlos todos.
 
 ```
-PASS  contrib  (pg_stat_statements 1.12, pg_trgm 1.6)
-PASS  pgmq  (pgmq 1.11.1)
-PASS  pgvector  (vector 0.8.2)
-PASS  postgis  (postgis 3.6.4)
+PASS  age  (age 1.8.0)
+PASS  anon  (anon 3.2.3)
+…
+SKIP  pg_textsearch  (supports PostgreSQL 17 18)
+…
+Passed: 81, skipped: 1, failed: 0
 All tests passed.
 ```
 
-Para probar una extensión nueva, añade su `test.sql` (ver [Extensiones](./extensions.es.md)). No hace falta registrarlo en ningún sitio.
+Para probar una extensión nueva, añade su `test.sql` (ver [Extensiones](./extensions.es.md#escribir-el-test), donde también se explican `server.conf`, `pg-versions`, `database` e `isolated`). No hace falta registrarlo en ningún sitio.
 
 ## CI
 

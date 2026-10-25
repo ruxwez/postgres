@@ -1,0 +1,103 @@
+# Extensions installed from the PGDG apt repository (apt.postgresql.org) as
+# postgresql-<major>-<package>, pinned to an upstream version. The Debian
+# revision is matched with "*" (3.6.4 matches 3.6.4+dfsg-2.pgdg13+1).
+#
+#   <package>          <version>   same version on every PostgreSQL major
+#   <package>/<major>  <version>   one line per major, for packages whose
+#                                  version follows the PostgreSQL major or
+#                                  that don't exist for every major
+#
+# Renovate keeps these up to date. To list what PGDG has for a package:
+#   docker run --rm postgres:18 bash -c 'apt-get update -qq && apt-cache madison postgresql-18-<package>'
+
+credcheck               5.0
+cron                    1.6.8
+db2fce                  0.0.17
+dirtyread               2.8
+extra-window-functions  2.0
+first-last-agg          0.1.4
+h3                      4.2.3
+hll                     2.21
+http                    1.7.2
+hypopg                  1.4.3
+icu-ext                 1.11.0
+ip4r                    2.4.3
+jsquery                 1.2
+orafce                  4.16.13
+partman                 5.5.0
+periods                 1.2.3
+pg-background           2.0.3
+pg-csv                  1.0.2
+pg-failover-slots       1.2.1
+pg-ivm                  1.15
+pg-permissions          1.4.1
+pg-pwhash               1.0
+pg-qualstats            2.1.4
+pg-rrule                0.3.0
+pg-stat-kcache          2.3.2
+pg-uuidv7               1.7.0
+pg-wait-sampling        1.1.11
+pgfincore               1.4.0
+pglogical               2.4.8
+pgnodemx                2.0.1
+pgpcre                  0.20190509
+pgrouting               4.0.1
+pgsphere                1.5.2
+pgtap                   1.3.4
+pgtt                    4.6
+pgvector                0.8.7
+pljs                    1.0.5
+plpgsql-check           2.10.13
+plprofiler              4.2.5
+postgis-3               3.6.4
+prefix                  1.2.11
+prioritize              1.0.4
+rational                0.0.3
+repack                  1.5.3
+roaringbitmap           1.2.0
+rum                     1.3.15
+semver                  0.42.0
+set-user                4.2.0
+show-plans              2.1.8
+similarity              1.0
+squeeze                 1.9.4
+statviz                 1.2.1
+tdigest                 1.4.7
+tds-fdw                 2.0.5
+timestamp9              1.4.0
+toastinfo               1.7
+wal2json                2.6
+
+age/14                  1.6.0
+age/15                  1.8.0
+age/16                  1.6.0
+age/17                  1.7.0
+age/18                  1.8.0
+
+documentdb/15           1.0
+documentdb/16           1.0
+documentdb/17           1.0
+documentdb/18           1.0
+
+pg-hint-plan/14         1.4.4
+pg-hint-plan/15         1.5.3
+pg-hint-plan/16         1.6.2
+pg-hint-plan/17         1.7.1
+pg-hint-plan/18         1.8.0
+
+pg-textsearch/17        1.5.1
+pg-textsearch/18        1.5.1
+
+pgaudit/14              1.6.3
+pgaudit/15              1.7.1
+pgaudit/16              16.1
+pgaudit/17              17.1
+pgaudit/18              18.0
+
+# Apache-2.0 edition. Features under the Timescale License (compression,
+# continuous aggregates policies, ...) are not included.
+timescaledb/14          2.19.3
+timescaledb/15          2.28.3
+timescaledb/16          2.30.2
+timescaledb/17          2.30.2
+timescaledb/18          2.30.2

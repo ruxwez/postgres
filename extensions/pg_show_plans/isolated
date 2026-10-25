@@ -1,0 +1,3 @@
+pg_show_plans crashes the server (segfault) when it's preloaded together with
+timescaledb and a row is inserted into a hypertable, so it's tested on its
+own server.

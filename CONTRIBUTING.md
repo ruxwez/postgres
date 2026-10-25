@@ -22,7 +22,7 @@ Use the templates in `.github/ISSUE_TEMPLATE/`:
    make test PG_VERSION=18
    ```
 
-4. If you're adding an extension, follow [Extensions](./.docs/extensions.md). It comes down to a few lines in the `Dockerfile`, an `extensions/<name>/test.sql`, and a row in the README table.
+4. If you're adding an extension, follow [Extensions](./.docs/extensions.md). It comes down to a line in `extensions/pgdg.txt` (or a few in the `Dockerfile`), an `extensions/<name>/test.sql`, and a row in [Included extensions](./.docs/included-extensions.md).
 5. Open the PR against `main`. CI builds and tests every version on amd64 and arm64.
 
 Merging only updates the floating tags (`18`, `latest`). Maintainers cut releases to update the versioned tags (see [Releases](./.docs/releases.md)).
@@ -38,7 +38,9 @@ Merging only updates the floating tags (`18`, `latest`). Maintainers cut release
 ```
 Dockerfile            Image definition (one stage per extension built from source)
 docker-bake.hcl       PostgreSQL versions and tags
-extensions/<name>/    test.sql for each extension
+extensions/pgdg.txt   PGDG packages and their versions
+extensions/*.sh       Build helpers used by the Dockerfile
+extensions/<name>/    test.sql for each extension (plus optional server.conf, ...)
 tests/run.sh          Runs every test.sql against an image
 .github/workflows/    CI: build, test, publish, release
 .github/scripts/      Helpers used by CI (release notes)

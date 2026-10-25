@@ -4,104 +4,97 @@
 
 Every extension has two parts:
 
-1. **How it's installed**, in the [`Dockerfile`](../Dockerfile).
-2. **How it's tested**, in `extensions/<name>/test.sql`.
+1. **How it's installed**: a line in [`extensions/pgdg.txt`](../extensions/pgdg.txt), or a few lines in the [`Dockerfile`](../Dockerfile).
+2. **How it's tested**: `extensions/<name>/test.sql`.
 
-There is no other code to touch.
+There is no other code to touch. The full list of what's included is in [Included extensions](./included-extensions.md).
 
 ## Adding an extension
 
+Pick the first option that works, in this order.
+
 ### Option A: it's packaged in PGDG (preferred)
 
-Look for `postgresql-<major>-<name>` on [apt.postgresql.org](https://apt.postgresql.org/pub/repos/apt/pool/main/). It has to exist for every supported version.
-
-Declare its version at the top of the Dockerfile. The `# renovate:` comment points Renovate at the PGDG index, so it opens a PR when a new version is packaged:
-
-```dockerfile
-# renovate: datasource=deb depName=postgresql-18-my-extension registryUrl=https://apt.postgresql.org/pub/repos/apt?suite=trixie-pgdg&components=main&binaryArch=amd64
-ARG MY_EXTENSION_VERSION=1.2.3
-```
-
-`suite` is the Debian release of the base image (`trixie` today) followed by `-pgdg`. Check it with `docker run --rm postgres:18 cat /etc/os-release`.
-
-Then add it to the `apt-get install` in the final stage, pinned, and to the labels:
-
-```dockerfile
-ARG MY_EXTENSION_VERSION
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      "postgresql-${PG_MAJOR}-postgis-3=${POSTGIS_VERSION}+*" \
-      "postgresql-${PG_MAJOR}-my-extension=${MY_EXTENSION_VERSION}*" \
- && rm -rf /var/lib/apt/lists/*
-LABEL ... \
-      io.github.ruxwez.postgres.my-extension.version="${MY_EXTENSION_VERSION}"
-```
-
-The trailing `*` matches the Debian revision (`1.2.3-1.pgdg13+1`). Use `+*` when the package version contains `+dfsg` or similar, as PostGIS does. You can list the available versions with:
+Look for `postgresql-<major>-<package>` on [apt.postgresql.org](https://apt.postgresql.org/pub/repos/apt/pool/main/), and list the versions it has:
 
 ```sh
-docker run --rm postgres:18 bash -c 'apt-get update -qq && apt-cache madison postgresql-18-my-extension'
+docker run --rm postgres:18 bash -c 'apt-get update -qq && apt-cache madison postgresql-18-<package>'
 ```
 
-PGDG usually keeps a few previous versions in its index, so the pin keeps working for a while after a new release. Once a version is dropped from the index, the build fails with `Version '…' was not found` until the Renovate PR is merged.
+If the same upstream version exists for every supported major, add one line to `extensions/pgdg.txt`:
 
-`PG_MAJOR` is set by the official base image.
+```
+my-package              1.2.3
+```
 
-### Option B: build it from source
+If the version differs per major, or the package doesn't exist for some of them, add one line per major instead:
 
-Declare its version at the top of the Dockerfile, next to the others:
+```
+my-package/17           2.0.1
+my-package/18           2.1.0
+```
+
+The version is the upstream one, without the Debian revision: `1.2.3` matches `1.2.3-1.pgdg13+1`. Renovate updates these lines and groups them into one weekly PR.
+
+### Option B: the authors publish prebuilt packages
+
+If the authors attach a `.deb` (or a `.zip` with one) per PostgreSQL major and architecture to their releases, add it to the `prebuilt` stage. `fetch-deb` downloads it and keeps only its PostgreSQL files:
 
 ```dockerfile
+# at the top, with the other versions
+# renovate: datasource=github-releases depName=owner/my-extension
+ARG MY_EXTENSION_VERSION=1.2.3
+
+# in the prebuilt stage
+ARG MY_EXTENSION_VERSION
+RUN fetch-deb "https://github.com/owner/my-extension/releases/download/v${MY_EXTENSION_VERSION}/my-extension-pg${PG_MAJOR}-${TARGETARCH}.deb"
+```
+
+### Option C: build it from source
+
+Add a line to the `source` stage. `pgxs-build` fetches a tag (or a commit) and runs `make install` into `/out`:
+
+```dockerfile
+# at the top, with the other versions
 # renovate: datasource=github-tags depName=owner/my-extension
 ARG MY_EXTENSION_VERSION=1.2.3
-```
 
-The `# renovate:` comment right above the `ARG` lets Renovate open a PR whenever a new tag is released. Keep the same format.
-
-Add a stage on top of `build-base`. It must install into `/out` (via `DESTDIR`):
-
-```dockerfile
-FROM build-base AS my-extension
+# in the source stage
 ARG MY_EXTENSION_VERSION
-RUN git clone --depth 1 --branch "v${MY_EXTENSION_VERSION}" https://github.com/owner/my-extension.git /src \
- && make -C /src \
- && make -C /src install DESTDIR=/out
+RUN pgxs-build https://github.com/owner/my-extension.git "v${MY_EXTENSION_VERSION}"
 ```
 
-In the final stage, copy it over and add its version to the labels:
+Optional arguments: a subdirectory, then extra `make` arguments (`pgxs-build URL TAG subdir USE_PGXS=1`). Prefix with `MIN_PG_MAJOR=16` to skip older majors that the extension doesn't support. If the build needs `-dev` packages, add them to the `apt-get install` of the `source` stage; they don't reach the final image. Runtime libraries go in the final stage's `apt-get install`.
 
-```dockerfile
-ARG MY_EXTENSION_VERSION
-COPY --from=my-extension /out/ /
-LABEL ... \
-      io.github.ruxwez.postgres.my-extension.version="${MY_EXTENSION_VERSION}"
-```
+The `# renovate:` comment right above the `ARG` lets Renovate open a PR whenever a new version is released. Keep the same format.
 
-If the build needs extra packages, add them to `build-base`. They won't reach the final image.
+## Writing the test
 
-### Then, in both cases
-
-Create `extensions/<name>/test.sql`. It should **use** the extension, not only create it, and raise an error if the result is wrong:
+Create `extensions/<name>/test.sql`. It should **use** the extension, not only create it, and fail if the result is wrong. `assert_true(condition, message)` is available in every test database:
 
 ```sql
 CREATE EXTENSION my_extension;
 
-DO $$
-BEGIN
-  IF my_function(1) <> 2 THEN
-    RAISE EXCEPTION 'my_extension: unexpected result';
-  END IF;
-END $$;
+SELECT assert_true(my_function(1) = 2, 'my_extension: my_function()');
 ```
 
-`tests/run.sh` picks it up automatically. Finally, add the extension to the table in the README.
+`tests/run.sh` picks it up automatically. Each test runs in a fresh database, all of them on one server. These optional files in the same directory change that:
+
+| File | Content | Effect |
+|---|---|---|
+| `server.conf` | `postgresql.conf` lines, e.g. `shared_preload_libraries = 'my_extension'` | Applied to the test server. `shared_preload_libraries` values from every extension are merged. |
+| `pg-versions` | Supported majors, e.g. `17 18` | On other majors the test is reported as `SKIP` instead of failing. |
+| `database` | A database name, e.g. `postgres` | The test runs there instead of in a fresh database (pg_cron and the extensions that depend on it need this). |
+| `isolated` | Why the extension can't share a server | The test runs on a server of its own, with only its own `server.conf`. |
+
+Finally, add the extension to [Included extensions](./included-extensions.md) and to the category table in the README.
 
 ## Upgrading an extension
 
-Change its `ARG *_VERSION` at the top of the Dockerfile. Renovate opens these PRs for you, for both apt packages and extensions built from source.
+Change its version in `extensions/pgdg.txt` or in its `ARG` at the top of the Dockerfile. Renovate opens these PRs for you.
 
 Once merged, the change only reaches `18` and `latest`. To ship it to `18-v1`, cut a release (see [Releases](./releases.md) to pick the version bump).
 
 ## Adding or dropping a PostgreSQL version
 
-Edit the `major` list in [`docker-bake.hcl`](../docker-bake.hcl). To move `:latest` to a new major, change `LATEST` too. CI builds and tests every version in that list, so a version where some extension isn't available fails the build.
+Edit the `major` list in [`docker-bake.hcl`](../docker-bake.hcl). To move `:latest` to a new major, change `LATEST` too. CI builds and tests every version in that list. If an extension isn't available for a new major, either give it a `pg-versions` file (and the matching per-major lines or `MIN_PG_MAJOR`), or wait until it is.
