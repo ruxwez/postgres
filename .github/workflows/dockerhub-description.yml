@@ -38,7 +38,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ env.TOKEN }}
           repository: ruxwez/postgres
-          short-description: PostgreSQL 14-18 with pgvector, PostGIS and pgmq. Official image, amd64 + arm64.
+          short-description: PostgreSQL 14-18 with 80+ extensions. pgvector, PostGIS, TimescaleDB, pgmq, pg_cron...
           readme-filepath: README.md
           # Turns relative links (./.docs/...) into absolute GitHub URLs.
           enable-url-completion: true

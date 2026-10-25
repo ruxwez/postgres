@@ -1,0 +1,3 @@
+pg_duckdb aborts the server when it's preloaded together with anon: anon's
+Rust (pgrx) hooks panic when DuckDB calls them from its worker threads.
+Tested on its own server.

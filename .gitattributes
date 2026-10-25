@@ -1,2 +1,3 @@
-# Scripts run inside Linux containers and CI; keep LF even on Windows checkouts.
-*.sh text eol=lf
+# Keep LF everywhere: these files are read inside Linux containers and CI,
+# where CRLF breaks shell scripts and the version lists.
+* text=auto eol=lf

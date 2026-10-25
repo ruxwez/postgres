@@ -4,12 +4,31 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Extension versions (see the `# renovate:` comments in the Dockerfile)",
+      "description": "Extensions not from PGDG (see the `# renovate:` comments in the Dockerfile)",
       "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: registryUrl=(?<registryUrl>\\S+))?\\s+ARG \\S+_VERSION=(?<currentValue>\\S+)"
       ],
       "extractVersionTemplate": "^v?(?<version>[^+]+)"
+    },
+    {
+      "customType": "regex",
+      "description": "PGDG packages in extensions/pgdg.txt: `cron 1.6.8` is postgresql-18-cron, `pgaudit/16 16.1` is postgresql-16-pgaudit",
+      "managerFilePatterns": ["/^extensions/pgdg\\.txt$/"],
+      "matchStrings": ["(?m)^(?<depName>[a-z0-9-]+(?:/\\d+)?)[ \\t]+(?<currentValue>\\S+)$"],
+      "datasourceTemplate": "deb",
+      "packageNameTemplate": "{{#if (containsString depName '/')}}postgresql-{{{replace '^.*/' '' depName}}}-{{{replace '/.*$' '' depName}}}{{else}}postgresql-18-{{{depName}}}{{/if}}",
+      "registryUrlTemplate": "https://apt.postgresql.org/pub/repos/apt?suite=trixie-pgdg&components=main&binaryArch=amd64",
+      "extractVersionTemplate": "^(?<version>[^-+~]+)",
+      "versioningTemplate": "loose"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "One weekly PR for all PGDG package updates",
+      "matchFileNames": ["extensions/pgdg.txt"],
+      "groupName": "PGDG extensions",
+      "schedule": ["before 6am on monday"]
     }
   ]
 }

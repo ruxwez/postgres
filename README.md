@@ -7,10 +7,10 @@
 
 > [Leer en español](./README.es.md)
 
-**The official PostgreSQL image with pgvector, PostGIS and pgmq preinstalled.** Vector search, geospatial queries and message queues in a single Postgres: no extra services, and no custom image to maintain.
+**The official PostgreSQL image with 80+ extensions preinstalled**: pgvector, PostGIS, pgmq, TimescaleDB, pg_cron, pg_duckdb, Apache AGE, pg_graphql and [many more](./.docs/included-extensions.md). Vector search, geospatial queries, queues, time series and analytics in a single Postgres: no extra services, and no custom image to maintain.
 
-- **Drop-in replacement** for `postgres`. Same entrypoint, same environment variables, same everything; only the extensions are added.
-- **PostgreSQL 14 to 18**, on `linux/amd64` and `linux/arm64`. Both architectures are tested before every publish.
+- **Drop-in replacement** for `postgres`. Same entrypoint, same environment variables, same defaults; nothing is enabled until you run `CREATE EXTENSION`.
+- **PostgreSQL 14 to 18**, on `linux/amd64` and `linux/arm64`. Every extension has a functional test, run on both architectures before every publish.
 - **Immutable versioned tags** (`18-v1.0.0`), so an update never reaches you unless you ask for it.
 - **Rebuilt weekly** with the base image's security fixes.
 
@@ -73,14 +73,14 @@ SELECT msg_id, message FROM pgmq.read(queue_name => 'embeddings', vt => 30, qty 
 
 If you only need one extension, its own image is a great choice. This one is for when you need several:
 
-| | `postgres` | `pgvector/pgvector` | `postgis/postgis` | **`ruxwez/postgres`** |
-|---|:-:|:-:|:-:|:-:|
-| pgvector | — | ✅ | — | ✅ |
-| PostGIS | — | — | ✅ | ✅ |
-| pgmq | — | — | — | ✅ |
-| `linux/arm64` (Apple Silicon, Graviton, Raspberry Pi) | ✅ | ✅ | — | ✅ |
+| | `postgres` | `pgvector/pgvector` | `postgis/postgis` | `pglayers-full` | **`ruxwez/postgres`** |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Extensions beyond contrib | — | 1 | 1 | 80+ | 80+ |
+| PostgreSQL 14–16 | ✅ | ✅ | ✅ | — | ✅ |
+| `linux/arm64` (Apple Silicon, Graviton, Raspberry Pi) | ✅ | ✅ | — | ✅ | ✅ |
+| Same defaults as the official image | ✅ | ✅ | ✅ | — (preloads libraries) | ✅ |
 
-<sub>Checked on the PostgreSQL 18 tags of each image (`pg18`, `18-3.6`) in October 2026.</sub>
+<sub>Checked in October 2026 on the PostgreSQL 14 and 18 tags of each image. [pglayers](https://github.com/pglayers/pglayers) also publishes each extension as a separate layer, which suits you if you want to assemble your own image.</sub>
 
 ## Tags
 
@@ -95,22 +95,32 @@ Pick a tag depending on how much change you're willing to accept:
 
 The `vX.Y.Z` version belongs to this project, not to PostgreSQL: it changes when an extension changes. Each [release](https://github.com/ruxwez/postgres/releases) lists the exact PostgreSQL and extension versions of every image. See [Releases](./.docs/releases.md) for what each kind of bump means.
 
-The versions are also in the image labels:
+Each image also lists what it contains:
 
 ```sh
-docker inspect ruxwez/postgres:18-v1 --format '{{json .Config.Labels}}'
+docker run --rm ruxwez/postgres:18-v1 cat /usr/share/postgres-extensor/extensions.txt
 ```
 
 For byte-for-byte reproducibility, pin a digest: `ruxwez/postgres@sha256:…`.
 
 ### Included extensions
 
-| Extension | Version | Source |
-|-----------|---------|--------|
-| [pgvector](https://github.com/pgvector/pgvector) | 0.8.2 | Built from source |
-| [PGMQ](https://github.com/pgmq/pgmq) | 1.11.1 | Built from source |
-| [PostGIS](https://postgis.net/) | 3.6.4 | PGDG apt package (`postgresql-N-postgis-3`) |
-| [contrib](https://www.postgresql.org/docs/current/contrib.html) | — | Included in the base image (`pg_stat_statements`, `pg_trgm`, …) |
+| Category | Extensions |
+|---|---|
+| AI and vectors | pgvector, pgvectorscale |
+| Geospatial | PostGIS, pgRouting, H3, pgSphere |
+| Search and text | pg_textsearch (BM25), RUM, pg_bigm, pg_similarity, pgpcre, re2, icu_ext |
+| Time series and analytics | TimescaleDB, pg_duckdb, pg_ivm, pg_incremental, hll, tdigest, roaringbitmap, … |
+| Queues and jobs | pgmq, pg_cron, pg_background, pg_partman |
+| JSON, documents and APIs | DocumentDB, pg_graphql, pg_jsonschema, jsquery, http, pg_net, pgjwt, … |
+| Data types | Apache AGE (graphs), pg_uuidv7, pg_hashids, ip4r, semver, periods, temporal_tables, … |
+| Replication and CDC | pglogical, wal2json, pg_failover_slots |
+| Monitoring and performance | pg_stat_monitor, pg_stat_kcache, pg_qualstats, hypopg, pg_hint_plan, pg_repack, pg_squeeze, … |
+| Security | pgaudit, PostgreSQL Anonymizer, pgsodium, credcheck, set_user, … |
+| Foreign data | Supabase Wrappers, pg_clickhouse, tds_fdw |
+| Development and compatibility | pgTAP, plpgsql_check, plprofiler, PLJS, orafce, pgtt, db2fce |
+
+Plus all of [contrib](https://www.postgresql.org/docs/current/contrib.html). See the [full list](./.docs/included-extensions.md) for links, which ones need `shared_preload_libraries`, and known caveats.
 
 ## Use it in tests and CI
 
@@ -153,8 +163,10 @@ with PostgresContainer("ruxwez/postgres:18-v1") as postgres:
 
 Everything is in two files:
 
-- [`Dockerfile`](./Dockerfile): starts from `postgres:N`, installs the apt-packaged extensions, and copies in the ones compiled in separate build stages. Compilers and headers never reach the final image.
+- [`Dockerfile`](./Dockerfile): starts from `postgres:N`, installs the PGDG packages listed in [`extensions/pgdg.txt`](./extensions/pgdg.txt), and copies in the extensions that come from the authors' releases or are compiled in separate build stages. Compilers and headers never reach the final image.
 - [`docker-bake.hcl`](./docker-bake.hcl): the list of PostgreSQL versions and their tags. CI reads it too.
+
+Each extension has a functional test in `extensions/<name>/test.sql`.
 
 To build and test locally (requires Docker with Buildx):
 
@@ -166,6 +178,7 @@ make build-all              # build every version
 
 ## Documentation
 
+- [Included extensions](./.docs/included-extensions.md): the full list, with setup notes.
 - [Extensions](./.docs/extensions.md): adding or upgrading an extension or a PostgreSQL version.
 - [Tests](./.docs/tests.md): how the tests and CI work.
 - [Releases](./.docs/releases.md): versioning and how to publish a release.
