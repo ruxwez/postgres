@@ -18,13 +18,25 @@ jobs:
   update:
     name: Update description
     runs-on: ubuntu-latest
+    env:
+      # Editing the description needs a Docker Hub token with the
+      # "Read, Write, Delete" scope. It's kept apart from DOCKER_PERSONAL_KEY,
+      # which only needs "Read & Write" to push images, so the build jobs
+      # never get permission to delete anything.
+      TOKEN: ${{ secrets.DOCKERHUB_DESCRIPTION_TOKEN }}
     steps:
+      - name: Check token
+        if: env.TOKEN == ''
+        run: |
+          echo "::error::Missing secret DOCKERHUB_DESCRIPTION_TOKEN: a Docker Hub access token with the 'Read, Write, Delete' scope."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PERSONAL_KEY }}
+          password: ${{ env.TOKEN }}
           repository: ruxwez/postgres
           short-description: PostgreSQL 14-18 with pgvector, PostGIS and pgmq. Official image, amd64 + arm64.
           readme-filepath: README.md
