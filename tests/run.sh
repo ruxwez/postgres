@@ -103,9 +103,9 @@ run_test() {
     db="$(xargs <"$dir/database")"
   else
     db="test_${name//-/_}"
-    pg -c "CREATE DATABASE $db" >/dev/null
   fi
-  if output="$( (echo "$assert_function"; cat "$dir/test.sql") | pg -d "$db" 2>&1)"; then
+  if output="$( { [ -e "$dir/database" ] || pg -c "CREATE DATABASE $db"; } 2>&1 >/dev/null &&
+                (echo "$assert_function"; cat "$dir/test.sql") | pg -d "$db" 2>&1)"; then
     created="$(pg -d "$db" -At -F ' ' -c "SELECT extname, extversion FROM pg_extension WHERE extname <> 'plpgsql' ORDER BY extname")"
     while read -r ext version; do
       [ -n "$ext" ] && versions[$ext]="$version"
@@ -116,7 +116,20 @@ run_test() {
     echo "FAIL  $name"
     echo "$output" | sed 's/^/      /'
     failed+=("$name")
+    wait_for_recovery
   fi
+}
+
+# If a test crashed the server, PostgreSQL restarts and recovers on its own:
+# wait for it so the remaining tests still run.
+wait_for_recovery() {
+  for _ in $(seq 60); do
+    pg -At -c 'SELECT 1' >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  docker logs --tail 50 "$CONTAINER"
+  echo "PostgreSQL did not recover" >&2
+  exit 1
 }
 
 shared=()
@@ -144,7 +157,7 @@ for dir in "${shared[@]}"; do
 done
 
 for dir in "${isolated[@]}"; do
-  echo "Starting PostgreSQL for $(basename "$dir") alone ($(head -n1 "$dir/isolated"))..."
+  echo "Starting PostgreSQL for $(basename "$dir") alone (see extensions/$(basename "$dir")/isolated)..."
   start_server "$dir"
   run_test "$dir"
 done

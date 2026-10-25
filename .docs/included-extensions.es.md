@@ -26,6 +26,7 @@ services:
 Algunas advertencias:
 
 - **pg_show_plans y timescaledb no se pueden precargar a la vez.** Insertar en una hypertable tumba el servidor (segfault). Precarga una u otra.
+- **anon y pg_duckdb no se pueden precargar a la vez.** Los hooks de anon abortan el servidor cuando DuckDB ejecuta una consulta con varios hilos.
 - **Muchas extensiones precargadas arrancan background workers.** Si precargas varias, sube `max_worker_processes` (por defecto es 8).
 - **wal2json** necesita `wal_level = logical`. Las versiones menores recientes exigen además `output_plugin_libraries = 'wal2json'`.
 - **pg_cron** y las extensiones que dependen de ella (`pg_incremental`, `documentdb`) solo funcionan en la base de datos indicada en `cron.database_name` (`postgres` por defecto).
@@ -72,7 +73,7 @@ La columna **Origen** indica cómo llega cada extensión a la imagen:
 | Extensión | Descripción | Origen | Notas |
 |---|---|---|---|
 | `timescaledb` | [TimescaleDB](https://github.com/timescale/timescaledb): hypertables y funciones de series temporales (edición Apache-2.0) | PGDG | preload |
-| `pg_duckdb` | [pg_duckdb](https://github.com/duckdb/pg_duckdb): motor analítico DuckDB dentro de PostgreSQL | Imagen | preload |
+| `pg_duckdb` | [pg_duckdb](https://github.com/duckdb/pg_duckdb): motor analítico DuckDB dentro de PostgreSQL | Imagen | preload; no junto con anon |
 | `pg_ivm` | [pg_ivm](https://github.com/sraoss/pg_ivm): vistas materializadas que se actualizan de forma incremental | PGDG | |
 | `pg_incremental` | [pg_incremental](https://github.com/CrunchyData/pg_incremental): pipelines de procesamiento incremental | Fuente | necesita pg_cron; PG 15+ |
 | `hll` | [postgresql-hll](https://github.com/citusdata/postgresql-hll): conteo de distintos con HyperLogLog | PGDG | |
@@ -153,7 +154,7 @@ La columna **Origen** indica cómo llega cada extensión a la imagen:
 | Extensión | Descripción | Origen | Notas |
 |---|---|---|---|
 | `pgaudit` | [pgAudit](https://github.com/pgaudit/pgaudit): registro de auditoría | PGDG | preload |
-| `anon` | [PostgreSQL Anonymizer](https://gitlab.com/dalibo/postgresql_anonymizer): enmascarado de datos | Release | preload |
+| `anon` | [PostgreSQL Anonymizer](https://gitlab.com/dalibo/postgresql_anonymizer): enmascarado de datos | Release | preload; no junto con pg_duckdb |
 | `pgsodium` | [pgsodium](https://github.com/michelp/pgsodium): criptografía con libsodium | Fuente | |
 | `pg_pwhash` | [pg_pwhash](https://github.com/cybertec-postgresql/pg_pwhash): hash de contraseñas con scrypt, yescrypt y argon2 | PGDG | |
 | `credcheck` | [credcheck](https://github.com/HexaCluster/credcheck): políticas de contraseñas y nombres de usuario | PGDG | preload |
