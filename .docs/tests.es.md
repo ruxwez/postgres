@@ -2,83 +2,40 @@
 
 > [Read in English](./tests.md)
 
-Este proyecto utiliza **tests de integración** en lugar de tests unitarios de Go (`_test.go`). La razón es que el propósito del binario es ejecutarse dentro de una imagen Docker en tiempo de build, interactuando directamente con el sistema operativo (apt, git, make, pg_config, etc.). No hay lógica de negocio aislable que justifique tests unitarios tradicionales.
+Los tests comprueban la **imagen final**: arrancan un contenedor y usan cada extensión dentro de un PostgreSQL real.
 
----
-
-## `make test` — Build test
+## Cómo ejecutarlos
 
 ```sh
-make test
+make test                   # construye PG 18 para tu plataforma y lo prueba
+make test PG_VERSION=14
+
+./tests/run.sh <imagen>     # prueba una imagen ya construida
 ```
 
-Construye la imagen Docker usando `.docker/Dockerfile.test`. Este Dockerfile ejecuta el binario `./main` dentro de un contenedor `postgres:13` y verifica que todo el pipeline de instalación de extensiones compile y se ejecute sin errores. Al finalizar, la imagen se elimina.
+## Qué hace `tests/run.sh`
 
-- **Propósito:** Validación rápida de que el código compila y los playgrounds no fallan.
-- **Limitación:** Usa PostgreSQL 13 fijo, independientemente de `PG_VERSION`.
+1. Arranca la imagen con `POSTGRES_PASSWORD=postgres`.
+2. Espera a que PostgreSQL acepte conexiones TCP. El servidor temporal de inicialización del entrypoint solo escucha en el socket unix, así que la espera no termina antes de tiempo.
+3. Para cada `extensions/*/test.sql`, crea una base de datos nueva, ejecuta el archivo con `ON_ERROR_STOP=1` e imprime `PASS` (con las versiones instaladas) o `FAIL` (con el error).
+4. Termina con un código distinto de cero si algún test falla, después de ejecutarlos todos.
 
----
-
-## `make runtime-test` — Runtime test
-
-```sh
-make runtime-test           # PG_VERSION=18 por defecto
-PG_VERSION=17 make runtime-test
+```
+PASS  contrib  (pg_stat_statements 1.12, pg_trgm 1.6)
+PASS  pgmq  (pgmq 1.11.1)
+PASS  pgvector  (vector 0.8.2)
+PASS  postgis  (postgis 3.6.4)
+All tests passed.
 ```
 
-Ejecuta el script `.docker/runtime-test.sh`, que:
+Para probar una extensión nueva, añade su `test.sql` (ver [Extensiones](./extensions.es.md)). No hace falta registrarlo en ningún sitio.
 
-1. Construye la imagen Docker de producción (`.docker/Dockerfile`).
-2. Inicia un contenedor con `POSTGRES_PASSWORD=postgres`.
-3. Espera a que PostgreSQL esté listo (`pg_isready`).
-4. Ejecuta `.docker/runtime-test.sql` contra la base de datos vía `psql`.
+## CI
 
-El script SQL verifica:
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) se ejecuta en cada PR, en `main`, en los tags `vX.Y.Z`, cada semana y manualmente:
 
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pgmq;
-CREATE EXTENSION IF NOT EXISTS postgis;
-
--- Confirma que las extensiones están instaladas
-SELECT * FROM pg_extension WHERE extname IN ('vector', 'pgmq', 'postgis');
-
--- Confirma que contrib está disponible
-SELECT * FROM pg_available_extensions WHERE name = 'pg_stat_statements';
-```
-
-- **Propósito:** Validación real de que todas las extensiones se instalan correctamente y son funcionales dentro de PostgreSQL.
-- **Versiones:** Se ejecuta contra la versión de PostgreSQL indicada por `PG_VERSION`.
-
----
-
-## CI — GitHub Actions
-
-En `pr-test.yml`, cada Pull Request ejecuta la runtime test matrix para todas las versiones soportadas (`14`, `15`, `16`, `17`, `18`, `latest`) en `linux/amd64`. Esto asegura que cualquier cambio funcione en todo el rango de versiones objetivo.
-
----
-
-## Cómo ampliar los tests
-
-### Agregar verificación de una extensión nueva
-
-Edita `.docker/runtime-test.sql`:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS mi_extension;
-SELECT * FROM pg_extension WHERE extname = 'mi_extension';
-```
-
-### Agregar un nuevo paso en runtime-test.sh
-
-Si necesitas lógica adicional antes o después de los tests SQL (por ejemplo, copiar archivos, verificar permisos), edita `.docker/runtime-test.sh`.
-
-### Tests unitarios (futuro)
-
-Si en el futuro se extrae lógica reutilizable (por ejemplo, el parseo de versiones o el matching de handlers), se pueden agregar archivos `_test.go` en los paquetes correspondientes y ejecutarlos con:
-
-```sh
-go test ./...
-```
-
-Actualmente no existen porque la lógica del proyecto está fuertemente acoplada al entorno Docker.
+1. **Prepare:** lee las versiones de `docker-bake.hcl`. Si es un tag de release, comprueba además que la release es válida y que no está publicada todavía (ver [Releases](./releases.es.md)).
+2. **Build y test** de cada versión en `amd64` y `arm64`, con runners nativos (sin emulación).
+3. **All builds passed:** un único check, para la protección de rama.
+4. **Publish** (no en PRs): sube exactamente las imágenes que se probaron y crea los tags como manifests multi-arquitectura. No se publica nada si alguna versión falla en cualquiera de las dos arquitecturas.
+5. **GitHub release** (solo en tags de release): crea la release con las versiones que reportan los tests.

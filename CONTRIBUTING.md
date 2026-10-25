@@ -8,44 +8,39 @@ Thank you for your interest in contributing to PostgreSQL Extensor.
 
 Use the templates in `.github/ISSUE_TEMPLATE/`:
 
-- **Bug report** — for errors or unexpected behavior.
-- **Feature request** — to suggest new extensions or features.
-- **Custom** — for any other case.
+- **Bug report:** for errors or unexpected behavior.
+- **Feature request:** to suggest new extensions or features.
+- **Custom:** for anything else.
 
 ## Pull Requests
 
 1. Fork the repository.
 2. Create a branch with a descriptive name: `feat/pg-partman`, `fix/pgvector-build`.
-3. Make sure tests pass for all PostgreSQL versions:
+3. Run the tests for at least one version locally:
 
    ```sh
-   make test
-   make runtime-test PG_VERSION=18
+   make test PG_VERSION=18
    ```
 
-4. If adding a new extension, include:
-   - The playground in `extensions/`.
-   - The registration in `extensions/extensions.go`.
-   - The verification in `.docker/runtime-test.sql`.
-   - Update the relevant documentation in `.docs/`.
+4. If you're adding an extension, follow [Extensions](./.docs/extensions.md). It comes down to a few lines in the `Dockerfile`, an `extensions/<name>/test.sql`, and a row in the README table.
+5. Open the PR against `main`. CI builds and tests every version on amd64 and arm64.
 
-5. Open the PR against `main`. CI workflows will run tests automatically for all supported versions.
+Merging only updates the floating tags (`18`, `latest`). Maintainers cut releases to update the versioned tags (see [Releases](./.docs/releases.md)).
 
 ## Guidelines
 
-- Follow the style of existing code.
-- Don't add unnecessary dependencies to `go.mod`.
-- Playgrounds should be idempotent and clean up temporary files.
-- Document semver version ranges clearly.
+- Prefer PGDG apt packages over building from source.
+- Pin every extension version, apt packages included, using an `ARG` with a `# renovate:` comment.
+- Build tools go in `build-base`, never in the final stage.
 
 ## Project structure
 
 ```
-.docker/          — Dockerfiles and test scripts
-.docs/            — Documentation
-.github/          — CI/CD workflows and templates
-extensions/       — Playground definitions
-instance/         — Environment detection (OS, PG version)
-plyd/             — Playground engine (core framework)
-utils/            — Semver versioning utilities
+Dockerfile            Image definition (one stage per extension built from source)
+docker-bake.hcl       PostgreSQL versions and tags
+extensions/<name>/    test.sql for each extension
+tests/run.sh          Runs every test.sql against an image
+.github/workflows/    CI: build, test, publish, release
+.github/scripts/      Helpers used by CI (release notes)
+.docs/                Documentation
 ```

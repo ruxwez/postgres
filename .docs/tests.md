@@ -2,83 +2,40 @@
 
 > [Leer en español](./tests.es.md)
 
-This project uses **integration tests** rather than Go unit tests (`_test.go`). The binary runs inside a Docker image at build time, interacting directly with the OS (apt, git, make, pg_config, etc.). There is no isolatable business logic that would benefit from traditional unit tests.
+The tests check the **final image**: they start a container and use each extension inside a real PostgreSQL instance.
 
----
-
-## `make test` — Build test
+## Running them
 
 ```sh
-make test
+make test                   # build PG 18 for your platform and test it
+make test PG_VERSION=14
+
+./tests/run.sh <image>      # test an image that's already built
 ```
 
-Builds the Docker image using `.docker/Dockerfile.test`. This Dockerfile runs `./main` inside a `postgres:13` container and verifies the entire extension installation pipeline compiles and executes without errors. The image is removed afterwards.
+## What `tests/run.sh` does
 
-- **Purpose:** Fast validation that the code compiles and playgrounds don't crash.
-- **Limitation:** Uses hardcoded PostgreSQL 13, regardless of `PG_VERSION`.
+1. Starts the image with `POSTGRES_PASSWORD=postgres`.
+2. Waits until PostgreSQL accepts TCP connections. The entrypoint's temporary init server only listens on the unix socket, so this check doesn't stop too early.
+3. For every `extensions/*/test.sql`, it creates a fresh database, runs the file with `ON_ERROR_STOP=1`, and prints `PASS` (with the installed extension versions) or `FAIL` (with the error).
+4. Exits non-zero if any test failed, after running all of them.
 
----
-
-## `make runtime-test` — Runtime test
-
-```sh
-make runtime-test           # PG_VERSION=18 by default
-PG_VERSION=17 make runtime-test
+```
+PASS  contrib  (pg_stat_statements 1.12, pg_trgm 1.6)
+PASS  pgmq  (pgmq 1.11.1)
+PASS  pgvector  (vector 0.8.2)
+PASS  postgis  (postgis 3.6.4)
+All tests passed.
 ```
 
-Runs the `.docker/runtime-test.sh` script, which:
+To test a new extension, add its `test.sql` (see [Extensions](./extensions.md)). You don't need to register it anywhere.
 
-1. Builds the production Docker image (`.docker/Dockerfile`).
-2. Starts a container with `POSTGRES_PASSWORD=postgres`.
-3. Waits for PostgreSQL readiness (`pg_isready`).
-4. Executes `.docker/runtime-test.sql` against the database via `psql`.
+## CI
 
-The SQL script verifies:
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every PR, on `main`, on `vX.Y.Z` tags, weekly and on manual dispatch:
 
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pgmq;
-CREATE EXTENSION IF NOT EXISTS postgis;
-
--- Confirms extensions are installed
-SELECT * FROM pg_extension WHERE extname IN ('vector', 'pgmq', 'postgis');
-
--- Confirms contrib is available
-SELECT * FROM pg_available_extensions WHERE name = 'pg_stat_statements';
-```
-
-- **Purpose:** Real validation that all extensions install correctly and work inside PostgreSQL.
-- **Versions:** Runs against the PostgreSQL version specified by `PG_VERSION`.
-
----
-
-## CI — GitHub Actions
-
-The `pr-test.yml` workflow runs the runtime test matrix for all supported versions (`14`, `15`, `16`, `17`, `18`, `latest`) on `linux/amd64` for every Pull Request. This ensures changes work across the entire supported version range.
-
----
-
-## How to extend the tests
-
-### Add verification for a new extension
-
-Edit `.docker/runtime-test.sql`:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS my_extension;
-SELECT * FROM pg_extension WHERE extname = 'my_extension';
-```
-
-### Add a new step in runtime-test.sh
-
-If you need additional logic before or after the SQL tests (e.g., copy files, check permissions), edit `.docker/runtime-test.sh`.
-
-### Unit tests (future)
-
-If reusable logic is extracted in the future (e.g., version parsing or handler matching), add `_test.go` files in the corresponding packages and run them with:
-
-```sh
-go test ./...
-```
-
-Currently none exist because the project's logic is tightly coupled to the Docker environment.
+1. **Prepare:** reads the versions from `docker-bake.hcl`. For a release tag, it also checks the release is valid and not published yet (see [Releases](./releases.md)).
+2. **Build and test** every version on `amd64` and `arm64`, using native runners (no emulation).
+3. **All builds passed:** a single status check, for branch protection.
+4. **Publish** (not on PRs): pushes the exact images that were tested and creates the tags as multi-arch manifests. Nothing is published unless every version passes on both architectures.
+5. **GitHub release** (release tags only): creates the release with the versions reported by the tests.
