@@ -1,0 +1,32 @@
+name: Docker Hub description
+
+# Keeps the Docker Hub page in sync with README.md, which is what people see
+# when they find the image there.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - .github/workflows/dockerhub-description.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: Update description
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PERSONAL_KEY }}
+          repository: ruxwez/postgres
+          short-description: PostgreSQL 14-18 with pgvector, PostGIS and pgmq. Official image, amd64 + arm64.
+          readme-filepath: README.md
+          # Turns relative links (./.docs/...) into absolute GitHub URLs.
+          enable-url-completion: true
