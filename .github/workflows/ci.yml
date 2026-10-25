@@ -182,7 +182,9 @@ jobs:
         run: exit 1
 
   publish:
-    name: Publish ${{ matrix.target }}
+    # No matrix expression here: GitHub appends "(pg-18)" itself, and a skipped
+    # job (pull requests) shows a clean "Publish" instead of the raw expression.
+    name: Publish
     needs: [prepare, build]
     if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
