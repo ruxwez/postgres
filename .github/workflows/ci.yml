@@ -125,7 +125,7 @@ jobs:
             *.platform=linux/${{ matrix.arch }}
             *.tags=postgres-extensor:test
             *.cache-from=type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}
-            *.cache-to=type=gha,mode=max,scope=${{ matrix.target }}-${{ matrix.arch }}
+            *.cache-to=type=gha,mode=max,ignore-error=true,scope=${{ matrix.target }}-${{ matrix.arch }}
 
       - name: Test
         env:
