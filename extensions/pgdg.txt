@@ -7,6 +7,11 @@
 #                                  version follows the PostgreSQL major or
 #                                  that don't exist for every major
 #
+# A package that depends on a <package>-scripts package (postgis-3, pgrouting)
+# needs that one pinned to the same version too: apt would otherwise install
+# the newest scripts, and the extension refuses to load against an older
+# library ("extension scripts version X cannot use older library version Y").
+#
 # Renovate keeps these up to date. To list what PGDG has for a package:
 #   docker run --rm postgres:18 bash -c 'apt-get update -qq && apt-cache madison postgresql-18-<package>'
 
@@ -19,7 +24,7 @@ first-last-agg          0.1.4
 h3                      4.2.3
 hll                     2.21
 http                    1.7.2
-hypopg                  1.4.3
+hypopg                  1.4.5
 icu-ext                 1.11.0
 ip4r                    2.4.3
 jsquery                 1.2
@@ -42,14 +47,16 @@ pglogical               2.4.8
 pgnodemx                2.0.1
 pgpcre                  0.20190509
 pgrouting               4.0.1
+pgrouting-scripts       4.0.1
 pgsphere                1.5.2
 pgtap                   1.3.4
 pgtt                    4.6
 pgvector                0.8.7
 pljs                    1.0.5
-plpgsql-check           2.10.13
+plpgsql-check           2.10.16
 plprofiler              4.2.5
 postgis-3               3.6.4
+postgis-3-scripts       3.6.4
 prefix                  1.2.11
 prioritize              1.0.4
 rational                0.0.3
